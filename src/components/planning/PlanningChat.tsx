@@ -19,9 +19,11 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
   const {
     messages,
     isStreaming,
+    isLoading,
     currentRecommendation,
     sendMessage,
     approveRecommendation,
+    reset,
   } = usePlanningChat({ projectId, onApprove })
 
   // Auto-scroll to bottom when new messages arrive
@@ -46,16 +48,48 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
     await approveRecommendation()
   }
 
+  const handleClearHistory = async () => {
+    if (confirm("Clear conversation history? This will start a fresh conversation.")) {
+      await reset()
+    }
+  }
+
   return (
     <Card className="flex flex-col h-[600px]">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Planning Chat</CardTitle>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearHistory}
+            disabled={isStreaming}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            Clear History
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto space-y-4">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            Loading conversation...
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-center px-4">
+            <div>
+              <p className="font-medium">Start planning your project</p>
+              <p className="text-sm mt-1">
+                Describe what you want to build and the Orchestrator will help you break it down into sprints and tasks.
+              </p>
+            </div>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))
+        )}
         <div ref={messagesEndRef} />
       </CardContent>
 

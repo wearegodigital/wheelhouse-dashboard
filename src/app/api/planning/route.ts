@@ -2,7 +2,10 @@ import { NextRequest } from 'next/server'
 
 interface PlanningChatRequest {
   projectId?: string
+  sprintId?: string
+  conversationId?: string
   message: string
+  history?: Array<{ role: string; content: string }>
 }
 
 export async function POST(request: NextRequest) {
@@ -33,13 +36,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call Modal API
+    // Call Modal API with history for context
     const response = await fetch(`${modalApiUrl}/planning/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        message: body.message,
+        projectId: body.projectId,
+        sprintId: body.sprintId,
+        conversationId: body.conversationId,
+        history: body.history || [], // Include conversation history for context
+      }),
     })
 
     if (!response.ok) {
