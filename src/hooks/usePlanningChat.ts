@@ -202,6 +202,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         let fullContent = ""
         let recommendations: DecompositionRecommendation | undefined
         let buffer = "" // Buffer for incomplete SSE chunks
+        let savedToDb = false // Track if we already saved to avoid duplicates
 
         while (true) {
           const { done, value } = await reader.read()
@@ -252,7 +253,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                   )
                 }
 
-                if (data.done) {
+                if (data.done && !savedToDb) {
                   // Save orchestrator message to DB
                   const savedAssistantId = await saveMessage(
                     convId,
@@ -260,6 +261,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                     fullContent,
                     recommendations
                   )
+                  savedToDb = true
                   // Update the message ID to the saved one
                   setMessages((prev) =>
                     prev.map((m) =>
@@ -295,8 +297,8 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           }
         }
 
-        // If we didn't get a done signal, save anyway
-        if (fullContent) {
+        // If we didn't get a done signal, save anyway (but only if not already saved)
+        if (fullContent && !savedToDb) {
           const savedAssistantId = await saveMessage(
             convId,
             "orchestrator",
