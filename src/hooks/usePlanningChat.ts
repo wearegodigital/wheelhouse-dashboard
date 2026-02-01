@@ -1,6 +1,16 @@
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { ChatMessage, DecompositionRecommendation } from "@/types"
+
+// Parse SSE line and return data object or null
+function parseSSEData(line: string): Record<string, unknown> | null {
+  if (!line.startsWith("data: ")) return null
+  try {
+    return JSON.parse(line.slice(6))
+  } catch {
+    return null
+  }
+}
 
 interface UsePlanningChatOptions {
   projectId?: string
@@ -33,7 +43,14 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [currentRecommendation, setCurrentRecommendation] = useState<DecompositionRecommendation | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
+  // Helper to update a specific message by ID
+  const updateMessageById = useCallback((id: string, updates: Partial<ChatMessage>) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
+    )
+  }, [])
 
   // Load existing conversation on mount
   useEffect(() => {
@@ -217,40 +234,22 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           buffer = messages.pop() || ""
 
           for (const message of messages) {
-            const lines = message.split("\n")
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
+            for (const line of message.split("\n")) {
+              const data = parseSSEData(line)
+              if (data) {
                 try {
-                  const data = JSON.parse(line.slice(6))
 
-                if (data.content) {
-                  fullContent += data.content
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMessage.id ? { ...m, content: fullContent } : m
-                    )
-                  )
-                }
-
-                if (data.chunk) {
-                  fullContent += data.chunk
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMessage.id ? { ...m, content: fullContent } : m
-                    )
-                  )
+                // Handle content streaming (supports both content and chunk keys)
+                const textChunk = data.content || data.chunk
+                if (textChunk) {
+                  fullContent += textChunk as string
+                  updateMessageById(assistantMessage.id, { content: fullContent })
                 }
 
                 if (data.recommendations) {
-                  recommendations = data.recommendations
-                  setCurrentRecommendation(data.recommendations)
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMessage.id
-                        ? { ...m, recommendations: data.recommendations }
-                        : m
-                    )
-                  )
+                  recommendations = data.recommendations as DecompositionRecommendation
+                  setCurrentRecommendation(recommendations)
+                  updateMessageById(assistantMessage.id, { recommendations })
                 }
 
                 if (data.done && !savedToDb) {
@@ -262,12 +261,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                     recommendations
                   )
                   savedToDb = true
-                  // Update the message ID to the saved one
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMessage.id ? { ...m, id: savedAssistantId } : m
-                    )
-                  )
+                  updateMessageById(assistantMessage.id, { id: savedAssistantId })
                 }
                 } catch {
                   // Skip invalid JSON
@@ -279,20 +273,11 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
 
         // Process any remaining buffer content
         if (buffer.trim()) {
-          const lines = buffer.split("\n")
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6))
-                if (data.content) {
-                  fullContent += data.content
-                }
-                if (data.chunk) {
-                  fullContent += data.chunk
-                }
-              } catch {
-                // Skip invalid JSON
-              }
+          for (const line of buffer.split("\n")) {
+            const data = parseSSEData(line)
+            if (data) {
+              const textChunk = data.content || data.chunk
+              if (textChunk) fullContent += textChunk as string
             }
           }
         }
@@ -305,11 +290,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
             fullContent,
             recommendations
           )
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMessage.id ? { ...m, id: savedAssistantId } : m
-            )
-          )
+          updateMessageById(assistantMessage.id, { id: savedAssistantId })
         }
       } catch (error) {
         console.error("Error sending message:", error)
@@ -323,6 +304,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       ensureConversation,
       saveMessage,
       getHistoryForContext,
+      updateMessageById,
       options.projectId,
       options.sprintId,
     ]

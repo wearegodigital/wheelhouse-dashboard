@@ -2,7 +2,7 @@
 
 import { Timer } from "lucide-react"
 import { EmptyState } from "@/components/ui/empty-state"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { CardSkeleton } from "@/components/ui/card-skeleton"
 import { useSprints } from "@/hooks/useSprints"
 import { SprintCard } from "./SprintCard"
 
@@ -16,20 +16,7 @@ export function SprintList({ projectId }: SprintListProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2">
-        {[1, 2].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-              <div className="h-3 bg-muted rounded w-full" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="h-3 bg-muted rounded w-1/2" />
-                <div className="h-3 bg-muted rounded w-2/3" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <CardSkeleton count={2} />
       </div>
     )
   }

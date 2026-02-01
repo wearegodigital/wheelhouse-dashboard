@@ -4,19 +4,12 @@ import Link from "next/link"
 import { Timer, CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { SprintSummary, SprintStatus } from "@/lib/supabase/types"
+import { ProgressBar } from "@/components/ui/progress-bar"
+import { getStatusBadgeVariant, pluralize } from "@/lib/status"
+import type { SprintSummary } from "@/lib/supabase/types"
 
 interface SprintCardProps {
   sprint: SprintSummary
-}
-
-const statusVariants: Record<SprintStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "secondary",
-  ready: "outline",
-  running: "default",
-  paused: "secondary",
-  completed: "default",
-  cancelled: "destructive",
 }
 
 export function SprintCard({ sprint }: SprintCardProps) {
@@ -39,7 +32,7 @@ export function SprintCard({ sprint }: SprintCardProps) {
                 </CardDescription>
               )}
             </div>
-            <Badge variant={statusVariants[sprint.status]} className="shrink-0">
+            <Badge variant={getStatusBadgeVariant(sprint.status)} className="shrink-0">
               {sprint.status}
             </Badge>
           </div>
@@ -50,7 +43,7 @@ export function SprintCard({ sprint }: SprintCardProps) {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  <span className="font-medium">{sprint.task_count}</span> task{sprint.task_count !== 1 ? 's' : ''}
+                  <span className="font-medium">{sprint.task_count}</span> {pluralize(sprint.task_count, "task")}
                 </span>
               </div>
               {sprint.tasks_running > 0 && (
@@ -64,21 +57,16 @@ export function SprintCard({ sprint }: SprintCardProps) {
             </div>
 
             {sprint.task_count > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+              <>
+                <ProgressBar
+                  value={progress}
+                  label="Progress"
+                  sublabel={`${progress}%`}
+                />
                 <div className="text-xs text-muted-foreground">
                   {sprint.tasks_completed} of {sprint.task_count} completed
                 </div>
-              </div>
+              </>
             )}
           </div>
         </CardContent>

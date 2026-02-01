@@ -5,7 +5,10 @@ import { FolderGit2, GitBranch, CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/empty-state"
+import { CardSkeleton } from "@/components/ui/card-skeleton"
+import { ProgressBar } from "@/components/ui/progress-bar"
 import { useProjects } from "@/hooks/useProjects"
+import { getStatusBadgeVariant, pluralize } from "@/lib/status"
 import type { ProjectSummary, ProjectStatus } from "@/lib/supabase/types"
 
 interface ProjectListProps {
@@ -15,36 +18,13 @@ interface ProjectListProps {
   }
 }
 
-const statusVariants: Record<ProjectStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  draft: "secondary",
-  planning: "outline",
-  ready: "default",
-  running: "default",
-  paused: "secondary",
-  completed: "default",
-  cancelled: "destructive",
-}
-
 export function ProjectList({ filters }: ProjectListProps) {
   const { data: projects, isLoading, error } = useProjects(filters)
 
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-              <div className="h-3 bg-muted rounded w-full" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="h-3 bg-muted rounded w-1/2" />
-                <div className="h-3 bg-muted rounded w-2/3" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <CardSkeleton count={3} />
       </div>
     )
   }
@@ -92,7 +72,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
                 {project.description}
               </CardDescription>
             </div>
-            <Badge variant={statusVariants[project.status]} className="shrink-0">
+            <Badge variant={getStatusBadgeVariant(project.status)} className="shrink-0">
               {project.status}
             </Badge>
           </div>
@@ -108,32 +88,27 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
               <div className="flex items-center gap-2">
                 <FolderGit2 className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  <span className="font-medium">{project.sprint_count}</span> sprint{project.sprint_count !== 1 ? 's' : ''}
+                  <span className="font-medium">{project.sprint_count}</span> {pluralize(project.sprint_count, "sprint")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  <span className="font-medium">{project.task_count}</span> task{project.task_count !== 1 ? 's' : ''}
+                  <span className="font-medium">{project.task_count}</span> {pluralize(project.task_count, "task")}
                 </span>
               </div>
             </div>
 
             {project.task_count > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {project.tasks_completed} of {project.task_count} completed
-                </div>
+              <ProgressBar
+                value={progress}
+                label="Progress"
+                sublabel={`${progress}%`}
+              />
+            )}
+            {project.task_count > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {project.tasks_completed} of {project.task_count} completed
               </div>
             )}
           </div>

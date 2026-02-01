@@ -44,10 +44,6 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
     }
   }
 
-  const handleApprove = async () => {
-    await approveRecommendation()
-  }
-
   const handleClearHistory = async () => {
     if (confirm("Clear conversation history? This will start a fresh conversation.")) {
       await reset()
@@ -96,7 +92,7 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
       <CardFooter className="flex-col gap-4">
         {currentRecommendation && (
           <div className="w-full flex gap-2">
-            <Button onClick={handleApprove} className="flex-1">
+            <Button onClick={approveRecommendation} className="flex-1">
               Approve Recommendations
             </Button>
             <Button variant="outline" className="flex-1">
