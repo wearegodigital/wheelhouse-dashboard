@@ -5,8 +5,9 @@ import { usePlanningChat } from "@/hooks/usePlanningChat"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { ChatMessage, DecompositionRecommendation } from "@/types"
-import { cn } from "@/lib/utils"
+import { ProgressIndicator } from "./ProgressIndicator"
+import { MessageBubble } from "./MessageBubble"
+import type { DecompositionRecommendation } from "@/types"
 
 interface PlanningChatProps {
   projectId?: string
@@ -21,15 +22,16 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
     isStreaming,
     isLoading,
     currentRecommendation,
+    currentPhase,
     sendMessage,
     approveRecommendation,
     reset,
   } = usePlanningChat({ projectId, onApprove })
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or phase changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, currentPhase])
 
   const handleSend = async () => {
     if (!inputValue.trim() || isStreaming) return
@@ -70,7 +72,7 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
       <CardContent className="flex-1 overflow-y-auto space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
-            Loading conversation...
+            Loading...
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-center px-4">
@@ -85,6 +87,9 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
           messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))
+        )}
+        {currentPhase && (
+          <ProgressIndicator phase={currentPhase} className="mx-auto max-w-md" />
         )}
         <div ref={messagesEndRef} />
       </CardContent>
@@ -115,79 +120,5 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
         </div>
       </CardFooter>
     </Card>
-  )
-}
-
-interface MessageBubbleProps {
-  message: ChatMessage
-}
-
-function MessageBubble({ message }: MessageBubbleProps) {
-  const isUser = message.role === "user"
-
-  return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "max-w-[80%] rounded-lg px-4 py-2",
-          isUser
-            ? "bg-primary text-primary-foreground ml-auto"
-            : "bg-muted text-foreground mr-auto"
-        )}
-      >
-        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-
-        {message.recommendations && (
-          <RecommendationsDisplay recommendations={message.recommendations} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface RecommendationsDisplayProps {
-  recommendations: DecompositionRecommendation
-}
-
-function RecommendationsDisplay({ recommendations }: RecommendationsDisplayProps) {
-  return (
-    <div className="mt-4 space-y-4 border-t pt-4">
-      <div className="font-semibold text-sm">Proposed Decomposition:</div>
-
-      {recommendations.sprints && recommendations.sprints.length > 0 && (
-        <div className="space-y-3">
-          {recommendations.sprints.map((sprint, idx) => (
-            <div key={idx} className="bg-background/50 rounded p-3 space-y-2">
-              <div className="font-medium">{sprint.name}</div>
-              <div className="text-xs opacity-80">{sprint.description}</div>
-              <div className="space-y-1">
-                {sprint.tasks.map((task, taskIdx) => (
-                  <div
-                    key={taskIdx}
-                    className="text-xs pl-3 border-l-2 border-primary/30 py-1"
-                  >
-                    <div>{task.description}</div>
-                    <div className="opacity-60 mt-0.5">
-                      Complexity: {task.estimatedComplexity}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {recommendations.tasks && recommendations.tasks.length > 0 && !recommendations.sprints && (
-        <div className="space-y-2">
-          {recommendations.tasks.map((task, idx) => (
-            <div key={idx} className="bg-background/50 rounded p-2 text-xs">
-              <div>{task.description}</div>
-              <div className="opacity-60 mt-1">Complexity: {task.estimatedComplexity}</div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }

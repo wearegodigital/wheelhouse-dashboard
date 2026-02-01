@@ -6,8 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import type { ChatMessage, DecompositionRecommendation } from "@/types"
-import { cn } from "@/lib/utils"
+import { ProgressIndicator, MessageBubble } from "@/components/planning"
 import { CheckCircle2, Lightbulb } from "lucide-react"
 
 interface AddTaskChatProps {
@@ -32,6 +31,7 @@ export function AddTaskChat({
     isStreaming,
     isLoading,
     currentRecommendation,
+    currentPhase,
     sendMessage,
     approveRecommendation,
   } = usePlanningChat({ projectId })
@@ -44,10 +44,10 @@ export function AddTaskChat({
     }
   }, [hasSentInitial, isLoading, initialMessage, sendMessage])
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or phase changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, currentPhase])
 
   const handleSend = async () => {
     if (!inputValue.trim() || isStreaming) return
@@ -92,8 +92,11 @@ export function AddTaskChat({
           </div>
         ) : (
           messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble key={message.id} message={message} maxWidth="max-w-[85%]" showSprintNumber />
           ))
+        )}
+        {currentPhase && (
+          <ProgressIndicator phase={currentPhase} className="mx-auto max-w-md" />
         )}
         <div ref={messagesEndRef} />
       </CardContent>
@@ -141,79 +144,5 @@ export function AddTaskChat({
         </div>
       </CardFooter>
     </Card>
-  )
-}
-
-interface MessageBubbleProps {
-  message: ChatMessage
-}
-
-function MessageBubble({ message }: MessageBubbleProps) {
-  const isUser = message.role === "user"
-
-  return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "max-w-[85%] rounded-lg px-4 py-2",
-          isUser
-            ? "bg-primary text-primary-foreground ml-auto"
-            : "bg-muted text-foreground mr-auto"
-        )}
-      >
-        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-
-        {message.recommendations && (
-          <RecommendationsDisplay recommendations={message.recommendations} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface RecommendationsDisplayProps {
-  recommendations: DecompositionRecommendation
-}
-
-function RecommendationsDisplay({ recommendations }: RecommendationsDisplayProps) {
-  return (
-    <div className="mt-4 space-y-4 border-t border-primary/20 pt-4">
-      <div className="font-semibold text-sm">Proposed Breakdown:</div>
-
-      {recommendations.sprints && recommendations.sprints.length > 0 && (
-        <div className="space-y-3">
-          {recommendations.sprints.map((sprint, idx) => (
-            <div key={idx} className="bg-background/50 rounded p-3 space-y-2">
-              <div className="font-medium">Sprint {idx + 1}: {sprint.name}</div>
-              <div className="text-xs opacity-80">{sprint.description}</div>
-              <div className="space-y-1">
-                {sprint.tasks.map((task, taskIdx) => (
-                  <div
-                    key={taskIdx}
-                    className="text-xs pl-3 border-l-2 border-primary/30 py-1"
-                  >
-                    <div>{task.description}</div>
-                    <div className="opacity-60 mt-0.5">
-                      Complexity: {task.estimatedComplexity}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {recommendations.tasks && recommendations.tasks.length > 0 && !recommendations.sprints && (
-        <div className="space-y-2">
-          {recommendations.tasks.map((task, idx) => (
-            <div key={idx} className="bg-background/50 rounded p-2 text-xs">
-              <div>{task.description}</div>
-              <div className="opacity-60 mt-1">Complexity: {task.estimatedComplexity}</div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }

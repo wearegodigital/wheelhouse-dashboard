@@ -12,6 +12,13 @@ function parseSSEData(line: string): Record<string, unknown> | null {
   }
 }
 
+export interface ProgressPhase {
+  phase: string
+  message: string
+  icon: string
+  elapsed?: number
+}
+
 interface UsePlanningChatOptions {
   projectId?: string
   sprintId?: string
@@ -42,6 +49,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [currentRecommendation, setCurrentRecommendation] = useState<DecompositionRecommendation | null>(null)
+  const [currentPhase, setCurrentPhase] = useState<ProgressPhase | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -239,9 +247,25 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
               if (data) {
                 try {
 
+                // Handle progress phase updates
+                if (data.phase) {
+                  setCurrentPhase({
+                    phase: data.phase as string,
+                    message: (data.message as string) || "",
+                    icon: (data.icon as string) || "spinner",
+                    elapsed: data.elapsed as number | undefined,
+                  })
+                  // Clear phase when complete
+                  if (data.phase === "complete") {
+                    setTimeout(() => setCurrentPhase(null), 1000)
+                  }
+                }
+
                 // Handle content streaming (supports both content and chunk keys)
                 const textChunk = data.content || data.chunk
                 if (textChunk) {
+                  // Clear phase once we start receiving content
+                  setCurrentPhase(null)
                   fullContent += textChunk as string
                   updateMessageById(assistantMessage.id, { content: fullContent })
                 }
@@ -352,6 +376,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
     isStreaming,
     isLoading,
     currentRecommendation,
+    currentPhase,
     sendMessage,
     approveRecommendation,
     reset,
