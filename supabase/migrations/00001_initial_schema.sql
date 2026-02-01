@@ -2,9 +2,6 @@
 -- Migration: 00001_initial_schema
 -- Description: Initial schema for Wheelhouse v3 - projects, sprints, tasks, agents, events, and planning
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ============================================================================
 -- ENUMS
 -- ============================================================================
@@ -85,7 +82,7 @@ CREATE TYPE planning_message_role AS ENUM (
 
 -- Teams table
 CREATE TABLE teams (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT NOT NULL UNIQUE,
   settings JSONB NOT NULL DEFAULT '{}',
@@ -108,7 +105,7 @@ CREATE TABLE users (
 
 -- API Keys table
 CREATE TABLE api_keys (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   key_hash TEXT NOT NULL UNIQUE,
@@ -121,7 +118,7 @@ CREATE TABLE api_keys (
 
 -- Projects table
 CREATE TABLE projects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
@@ -138,7 +135,7 @@ CREATE TABLE projects (
 
 -- Sprints table
 CREATE TABLE sprints (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -153,7 +150,7 @@ CREATE TABLE sprints (
 
 -- Tasks table
 CREATE TABLE tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
@@ -178,7 +175,7 @@ CREATE TABLE tasks (
 
 -- Agents table
 CREATE TABLE agents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   type agent_type NOT NULL,
   status agent_status NOT NULL DEFAULT 'spawned',
@@ -196,7 +193,7 @@ CREATE TABLE agents (
 
 -- Events table (append-only audit log)
 CREATE TABLE events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
   agent_id UUID REFERENCES agents(id) ON DELETE SET NULL,
   type TEXT NOT NULL,
@@ -208,7 +205,7 @@ CREATE TABLE events (
 
 -- Planning Conversations table
 CREATE TABLE planning_conversations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   sprint_id UUID REFERENCES sprints(id) ON DELETE CASCADE,
   task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
@@ -220,7 +217,7 @@ CREATE TABLE planning_conversations (
 
 -- Planning Messages table (append-only)
 CREATE TABLE planning_messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES planning_conversations(id) ON DELETE CASCADE,
   role planning_message_role NOT NULL,
   content TEXT NOT NULL,
@@ -684,7 +681,7 @@ CREATE POLICY "Users can update planning conversations"
   USING (true);
 
 -- Planning Messages policies
-CREATE POLICY "Users can read planning messages for conversations in their team"
+CREATE POLICY "Users can read planning messages in their team"
   ON planning_messages FOR SELECT
   USING (
     conversation_id IN (
