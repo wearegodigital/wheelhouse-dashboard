@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server'
 
+// Use Edge Runtime for proper SSE streaming on Vercel
+export const runtime = 'edge'
+
 interface PlanningChatRequest {
   projectId?: string
   sprintId?: string
