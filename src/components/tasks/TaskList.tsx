@@ -1,6 +1,7 @@
 "use client"
 
 import { useTasks } from "@/hooks/useTasks"
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription"
 import type { TaskFilters, TaskSummary } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -80,6 +81,9 @@ function getModeBadgeText(mode: string) {
 
 export function TaskList({ filters, className }: TaskListProps) {
   const { data: tasks, isLoading, error } = useTasks(filters)
+
+  // Subscribe to real-time updates on tasks table
+  useRealtimeSubscription("tasks", ["tasks", JSON.stringify(filters)])
 
   if (isLoading) {
     return (

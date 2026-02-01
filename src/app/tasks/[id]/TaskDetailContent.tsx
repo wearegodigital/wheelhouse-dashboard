@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Clock, GitBranch, Activity } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
@@ -13,12 +15,91 @@ interface TaskDetailContentProps {
   events: Event[];
 }
 
-export function TaskDetailContent({ task, agents, events }: TaskDetailContentProps) {
+export function TaskDetailContent({ task, agents: initialAgents, events: initialEvents }: TaskDetailContentProps) {
   const [currentStatus, setCurrentStatus] = useState(task.status);
+  const [agents, setAgents] = useState(initialAgents);
+  const [events, setEvents] = useState(initialEvents);
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions for agents and events
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Subscribe to agent changes for this task
+    const agentsChannel = supabase
+      .channel(`agents_${task.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "agents",
+          filter: `task_id=eq.${task.id}`,
+        },
+        async () => {
+          // Refetch agents when changes occur
+          const { data } = await supabase
+            .from("agents")
+            .select("*")
+            .eq("task_id", task.id)
+            .order("created_at", { ascending: true });
+          if (data) setAgents(data as Agent[]);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to event changes for this task
+    const eventsChannel = supabase
+      .channel(`events_${task.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "events",
+          filter: `task_id=eq.${task.id}`,
+        },
+        async () => {
+          // Refetch events when changes occur
+          const { data } = await supabase
+            .from("events")
+            .select("*")
+            .eq("task_id", task.id)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          if (data) setEvents(data as Event[]);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to task status changes
+    const taskChannel = supabase
+      .channel(`task_${task.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tasks",
+          filter: `id=eq.${task.id}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new === "object" && "status" in payload.new) {
+            setCurrentStatus(payload.new.status as typeof currentStatus);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(agentsChannel);
+      supabase.removeChannel(eventsChannel);
+      supabase.removeChannel(taskChannel);
+    };
+  }, [task.id, queryClient]);
 
   const handleStatusChange = () => {
-    // Trigger a refresh or optimistic update
-    // For now, we'll just rely on Supabase realtime to update
+    // Real-time subscription will automatically update the UI
   };
 
   return (
