@@ -80,54 +80,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create SSE stream
-    const encoder = new TextEncoder()
-    const decoder = new TextDecoder()
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const reader = response.body!.getReader()
-
-          while (true) {
-            const { done, value } = await reader.read()
-
-            if (done) {
-              controller.close()
-              break
-            }
-
-            // Decode the chunk
-            const chunk = decoder.decode(value, { stream: true })
-
-            // Forward as SSE format (data: prefix + double newline)
-            const sseChunk = chunk
-              .split('\n')
-              .filter((line) => line.trim())
-              .map((line) => {
-                // If already in SSE format, pass through
-                if (line.startsWith('data: ')) {
-                  return line + '\n\n'
-                }
-                // Otherwise, wrap in SSE format
-                return `data: ${line}\n\n`
-              })
-              .join('')
-
-            controller.enqueue(encoder.encode(sseChunk))
-          }
-        } catch (error) {
-          console.error('Error streaming planning response:', error)
-          // Send error event to client
-          const errorEvent = `data: ${JSON.stringify({
-            error: 'Stream interrupted',
-            message: error instanceof Error ? error.message : 'Unknown error',
-          })}\n\n`
-          controller.enqueue(encoder.encode(errorEvent))
-          controller.close()
-        }
-      },
-    })
+    // Pass through the SSE stream directly from Modal
+    // Modal already sends properly formatted SSE, no need to re-process
+    const stream = response.body
 
     return new Response(stream, {
       headers: {
