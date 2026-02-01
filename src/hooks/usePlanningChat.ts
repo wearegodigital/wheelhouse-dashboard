@@ -201,18 +201,26 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
 
         let fullContent = ""
         let recommendations: DecompositionRecommendation | undefined
+        let buffer = "" // Buffer for incomplete SSE chunks
 
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split("\n")
+          // Append new data to buffer
+          buffer += decoder.decode(value, { stream: true })
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6))
+          // Process complete SSE messages (separated by double newline)
+          const messages = buffer.split("\n\n")
+          // Keep the last potentially incomplete message in buffer
+          buffer = messages.pop() || ""
+
+          for (const message of messages) {
+            const lines = message.split("\n")
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6))
 
                 if (data.content) {
                   fullContent += data.content
@@ -258,6 +266,27 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                       m.id === assistantMessage.id ? { ...m, id: savedAssistantId } : m
                     )
                   )
+                }
+                } catch {
+                  // Skip invalid JSON
+                }
+              }
+            }
+          }
+        }
+
+        // Process any remaining buffer content
+        if (buffer.trim()) {
+          const lines = buffer.split("\n")
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.content) {
+                  fullContent += data.content
+                }
+                if (data.chunk) {
+                  fullContent += data.chunk
                 }
               } catch {
                 // Skip invalid JSON
