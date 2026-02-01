@@ -100,7 +100,7 @@ export default function NewProjectPage() {
           <CardHeader>
             <CardTitle>Project Details</CardTitle>
             <CardDescription>
-              Enter the details for your new project. You'll be able to start planning after creation.
+              Enter the details for your new project. You&apos;ll be able to start planning after creation.
             </CardDescription>
           </CardHeader>
           <CardContent>
