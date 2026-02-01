@@ -1,4 +1,5 @@
 import { PageContainer } from "@/components/layout/PageContainer"
+import { TaskList } from "@/components/tasks"
 
 export default function TasksPage() {
   return (
@@ -6,11 +7,7 @@ export default function TasksPage() {
       title="Tasks"
       description="All tasks across projects"
     >
-      <div className="rounded-lg border border-dashed p-8 text-center">
-        <p className="text-muted-foreground">
-          No tasks yet.
-        </p>
-      </div>
+      <TaskList />
     </PageContainer>
   )
 }

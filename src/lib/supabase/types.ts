@@ -99,8 +99,30 @@ export interface Database {
           started_at: string | null
           completed_at: string | null
         }
-        Insert: Omit<Database["public"]["Tables"]["projects"]["Row"], "id" | "created_at" | "updated_at">
-        Update: Partial<Omit<Database["public"]["Tables"]["projects"]["Row"], "id">>
+        Insert: {
+          team_id?: string | null
+          created_by?: string | null
+          name: string
+          description: string
+          repo_url: string
+          default_branch: string
+          status: ProjectStatus
+          metadata: Record<string, unknown>
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          team_id?: string | null
+          created_by?: string | null
+          name?: string
+          description?: string
+          repo_url?: string
+          default_branch?: string
+          status?: ProjectStatus
+          metadata?: Record<string, unknown>
+          started_at?: string | null
+          completed_at?: string | null
+        }
       }
       sprints: {
         Row: {

@@ -1,5 +1,6 @@
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Button } from "@/components/ui/button"
+import { ProjectList } from "@/components/projects"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
@@ -17,11 +18,7 @@ export default function ProjectsPage() {
         </Link>
       }
     >
-      <div className="rounded-lg border border-dashed p-8 text-center">
-        <p className="text-muted-foreground">
-          No projects yet. Create your first project to get started.
-        </p>
-      </div>
+      <ProjectList />
     </PageContainer>
   )
 }
