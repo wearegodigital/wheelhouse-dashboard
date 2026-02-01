@@ -97,6 +97,7 @@ export default function SettingsPage() {
   }
 
   async function deleteApiKey(keyId: string) {
+    if (!user) return
     if (!confirm("Are you sure you want to delete this API key? This action cannot be undone.")) {
       return
     }
