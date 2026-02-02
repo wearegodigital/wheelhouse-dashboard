@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(nextConfig, {
   // Sentry organization and project
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+  org: "we-are-go-digital-limited",
+  project: "wheelhouse",
 
   // Only upload source maps in CI/production builds
   silent: !process.env.CI,
