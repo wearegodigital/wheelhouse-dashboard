@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider"
 import { ToastProvider } from "./ToastProvider"
 import { ThemeProvider } from "./ThemeProvider"
 import { TaskNotificationListener } from "@/components/notifications/TaskNotificationListener"
+import { KeyboardShortcutsProvider } from "@/components/keyboard/KeyboardShortcutsProvider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,8 +12,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryProvider>
         <AuthProvider>
           <ToastProvider>
-            <TaskNotificationListener />
-            {children}
+            <KeyboardShortcutsProvider>
+              <TaskNotificationListener />
+              {children}
+            </KeyboardShortcutsProvider>
           </ToastProvider>
         </AuthProvider>
       </QueryProvider>
