@@ -36,6 +36,7 @@ export async function DELETE(request: NextRequest) {
     const query = params.toString()
 
     const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}${query ? `?${query}` : ""}`
+    console.log(`Calling Modal API: DELETE ${modalUrl}`)
 
     const response = await fetch(modalUrl, {
       method: "DELETE",
@@ -43,6 +44,21 @@ export async function DELETE(request: NextRequest) {
         "Content-Type": "application/json",
       },
     })
+
+    // Check if response is JSON
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text()
+      console.error(`Modal API returned non-JSON response (${response.status}):`, text.slice(0, 200))
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Modal API unavailable or returned invalid response (status: ${response.status}). Check MODAL_API_URL configuration.`,
+          debug: { url: modalUrl, status: response.status }
+        },
+        { status: 502 }
+      )
+    }
 
     const data = await response.json()
 
