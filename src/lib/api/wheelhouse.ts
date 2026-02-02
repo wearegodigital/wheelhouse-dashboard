@@ -1,8 +1,8 @@
 /**
  * Wheelhouse API Client
  *
- * Handles deletion operations through the Next.js API route which
- * proxies to Modal API for proper event sourcing and JSONL/Supabase sync.
+ * Handles CRUD operations through the Next.js API routes which
+ * proxy to Modal API for proper event sourcing and JSONL/Supabase sync.
  */
 
 export interface DeleteResponse {
@@ -18,7 +18,20 @@ export interface DeleteResponse {
   current_status?: string
 }
 
+export interface CreateResponse {
+  success: boolean
+  message: string
+  project_id?: string
+  sprint_id?: string
+  task_id?: string
+  error?: string
+}
+
 type EntityType = "projects" | "sprints" | "tasks"
+
+// =============================================================================
+// DELETE Operations
+// =============================================================================
 
 async function deleteEntity(
   entityType: EntityType,
@@ -56,3 +69,54 @@ async function deleteEntity(
 export const deleteProject = (id: string, cascade = true) => deleteEntity("projects", id, cascade)
 export const deleteSprint = (id: string, cascade = true) => deleteEntity("sprints", id, cascade)
 export const deleteTask = (id: string) => deleteEntity("tasks", id)
+
+// =============================================================================
+// CREATE Operations
+// =============================================================================
+
+async function createEntity(
+  entityType: EntityType,
+  data: Record<string, unknown>
+): Promise<CreateResponse> {
+  const response = await fetch(`/api/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type: entityType, ...data }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    const error = new Error(result.message || `API error: ${response.status}`) as Error & {
+      code?: string
+      status?: number
+    }
+    error.code = result.error
+    error.status = response.status
+    throw error
+  }
+
+  return result
+}
+
+export const createProject = (data: {
+  name: string
+  description?: string
+  repo_url?: string
+}) => createEntity("projects", data)
+
+export const createSprint = (data: {
+  project_id: string
+  name: string
+  description?: string
+  order_index?: number
+}) => createEntity("sprints", data)
+
+export const createTask = (data: {
+  title: string
+  description?: string
+  repo_url: string
+  sprint_id?: string
+}) => createEntity("tasks", data)

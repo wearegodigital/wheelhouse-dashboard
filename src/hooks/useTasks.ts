@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import { deleteTask as deleteTaskApi } from "@/lib/api/wheelhouse"
+import { deleteTask as deleteTaskApi, createTask as createTaskApi } from "@/lib/api/wheelhouse"
 import type { TaskSummary, TaskFilters } from "@/types"
 
 export function useTasks(filters?: TaskFilters) {
@@ -66,22 +66,26 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: async (data: {
+      title?: string
       description: string
       project_id?: string
       sprint_id?: string
       team_id?: string
-      repo_url?: string
+      repo_url: string
       status?: string
       mode?: string
     }) => {
-      const supabase = createClient()
-      const { data: task, error } = await supabase
-        .from("tasks")
-        .insert({ status: "pending", mode: "sequential", ...data } as never)
-        .select()
-        .single()
-      if (error) throw error
-      return task
+      // Use Modal API for creation to ensure JSONL sync
+      const result = await createTaskApi({
+        title: data.title || data.description.substring(0, 100),
+        description: data.description,
+        repo_url: data.repo_url,
+        sprint_id: data.sprint_id,
+      })
+      if (!result.success) {
+        throw new Error(result.message || "Failed to create task")
+      }
+      return { id: result.task_id, ...data }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
