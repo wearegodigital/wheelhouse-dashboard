@@ -1,11 +1,9 @@
 /**
- * Wheelhouse Modal API Client
+ * Wheelhouse API Client
  *
- * Handles deletion operations through the Modal API to ensure
- * proper event sourcing and JSONL/Supabase sync.
+ * Handles deletion operations through the Next.js API route which
+ * proxies to Modal API for proper event sourcing and JSONL/Supabase sync.
  */
-
-const WHEELHOUSE_API_BASE = process.env.NEXT_PUBLIC_MODAL_API_URL || ""
 
 export interface DeleteResponse {
   success: boolean
@@ -20,14 +18,21 @@ export interface DeleteResponse {
   current_status?: string
 }
 
-async function callWheelhouseAPI(
-  method: string,
-  path: string
-): Promise<DeleteResponse> {
-  const url = `${WHEELHOUSE_API_BASE}${path}`
+type EntityType = "projects" | "sprints" | "tasks"
 
-  const response = await fetch(url, {
-    method,
+async function deleteEntity(
+  entityType: EntityType,
+  id: string,
+  cascade: boolean = false
+): Promise<DeleteResponse> {
+  const params = new URLSearchParams({
+    type: entityType,
+    id: id,
+  })
+  if (cascade) params.append("cascade", "true")
+
+  const response = await fetch(`/api/delete?${params.toString()}`, {
+    method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
@@ -46,19 +51,6 @@ async function callWheelhouseAPI(
   }
 
   return data
-}
-
-type EntityType = "projects" | "sprints" | "tasks"
-
-async function deleteEntity(
-  entityType: EntityType,
-  id: string,
-  cascade: boolean = false
-): Promise<DeleteResponse> {
-  const params = new URLSearchParams()
-  if (cascade) params.append("cascade", "true")
-  const query = params.toString()
-  return callWheelhouseAPI("DELETE", `/${entityType}/${id}${query ? `?${query}` : ""}`)
 }
 
 export const deleteProject = (id: string, cascade = true) => deleteEntity("projects", id, cascade)
