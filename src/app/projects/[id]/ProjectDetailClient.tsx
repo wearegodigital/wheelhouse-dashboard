@@ -30,7 +30,11 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
   const handleDelete = async () => {
     try {
-      await deleteProject.mutateAsync(initialProject.id);
+      // Use source_id (Modal's original ID) for API call, fallback to id
+      await deleteProject.mutateAsync({
+        id: initialProject.id,
+        sourceId: (initialProject as { source_id?: string | null }).source_id,
+      });
       router.push("/projects");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";

@@ -86,6 +86,7 @@ export interface Database {
       projects: {
         Row: {
           id: string
+          source_id: string | null  // Original Modal ID for API calls
           team_id: string | null
           created_by: string | null
           name: string
@@ -127,6 +128,7 @@ export interface Database {
       sprints: {
         Row: {
           id: string
+          source_id: string | null  // Original Modal ID for API calls
           project_id: string
           name: string
           description: string | null
@@ -144,6 +146,7 @@ export interface Database {
       tasks: {
         Row: {
           id: string
+          source_id: string | null  // Original Modal ID for API calls
           team_id: string | null
           created_by: string | null
           project_id: string | null

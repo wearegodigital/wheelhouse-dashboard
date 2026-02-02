@@ -95,9 +95,10 @@ export function useDeleteSprint() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
-      // Use Modal API for deletion to ensure JSONL sync
-      const result = await deleteSprintApi(id, true)
+    mutationFn: async ({ id, projectId, sourceId }: { id: string; projectId: string; sourceId?: string | null }) => {
+      // Use source_id (Modal's original ID) for API call, fallback to id
+      const modalId = sourceId || id
+      const result = await deleteSprintApi(modalId, true)
       if (!result.success) {
         throw new Error(result.message || "Failed to delete sprint")
       }
