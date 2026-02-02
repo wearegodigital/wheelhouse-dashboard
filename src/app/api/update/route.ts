@@ -53,23 +53,20 @@ export async function PUT(request: NextRequest) {
     }
 
     // Build the payload based on entity type
-    let payload: UpdateProjectBody | UpdateSprintBody | UpdateTaskBody
+    let payload: Record<string, unknown> = {}
 
     switch (entityType) {
       case "projects":
-        payload = {}
         if (body.name !== undefined) payload.name = body.name
         if (body.description !== undefined) payload.description = body.description
         if (body.repo_url !== undefined) payload.repo_url = body.repo_url
         break
       case "sprints":
-        payload = {}
         if (body.name !== undefined) payload.name = body.name
         if (body.description !== undefined) payload.description = body.description
         if (body.order_index !== undefined) payload.order_index = body.order_index
         break
       case "tasks":
-        payload = {}
         if (body.title !== undefined) payload.title = body.title
         if (body.description !== undefined) payload.description = body.description
         if (body.repo_url !== undefined) payload.repo_url = body.repo_url
