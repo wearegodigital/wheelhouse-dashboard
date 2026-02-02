@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import type { TaskComment, User } from "@/lib/supabase/types"
+import { fetchUserMap, type UserInfo } from "@/lib/supabase/users"
+import type { TaskComment } from "@/lib/supabase/types"
 
 export interface CommentWithUser extends TaskComment {
-  user?: Pick<User, "id" | "email" | "display_name" | "avatar_url">
+  user?: UserInfo
 }
 
 export function useTaskComments(taskId: string) {
@@ -12,7 +13,6 @@ export function useTaskComments(taskId: string) {
     queryFn: async () => {
       const supabase = createClient()
 
-      // Fetch comments for this task
       const { data: comments, error } = await supabase
         .from("task_comments")
         .select("*")
@@ -21,16 +21,11 @@ export function useTaskComments(taskId: string) {
 
       if (error) throw error
 
-      // Fetch user info for each comment
       const typedComments = (comments || []) as TaskComment[]
-      const userIds = [...new Set(typedComments.map((c) => c.user_id))]
-      const { data: users } = await supabase
-        .from("users")
-        .select("id, email, display_name, avatar_url")
-        .in("id", userIds)
-
-      type UserInfo = Pick<User, "id" | "email" | "display_name" | "avatar_url">
-      const userMap = new Map(((users || []) as UserInfo[]).map((u) => [u.id, u]))
+      const userMap = await fetchUserMap(
+        supabase,
+        typedComments.map((c) => c.user_id)
+      )
 
       return typedComments.map((comment) => ({
         ...comment,
@@ -61,16 +56,14 @@ export function useAddTaskComment() {
 
       if (!user) throw new Error("Not authenticated")
 
-      const commentData = {
-        task_id: taskId,
-        user_id: user.id,
-        content,
-        parent_id: parentId || null,
-      }
-
       const { data, error } = await supabase
         .from("task_comments")
-        .insert(commentData as never)
+        .insert({
+          task_id: taskId,
+          user_id: user.id,
+          content,
+          parent_id: parentId || null,
+        } as never)
         .select()
         .single()
 
@@ -88,13 +81,13 @@ export function useUpdateTaskComment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (variables: { commentId: string; taskId: string; content: string }) => {
+    mutationFn: async ({ commentId, content }: { commentId: string; taskId: string; content: string }) => {
       const supabase = createClient()
 
       const { error } = await supabase
         .from("task_comments")
-        .update({ content: variables.content } as never)
-        .eq("id", variables.commentId)
+        .update({ content } as never)
+        .eq("id", commentId)
 
       if (error) throw error
     },
@@ -108,10 +101,10 @@ export function useDeleteTaskComment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (variables: { commentId: string; taskId: string }) => {
+    mutationFn: async ({ commentId }: { commentId: string; taskId: string }) => {
       const supabase = createClient()
 
-      const { error } = await supabase.from("task_comments").delete().eq("id", variables.commentId)
+      const { error } = await supabase.from("task_comments").delete().eq("id", commentId)
 
       if (error) throw error
     },

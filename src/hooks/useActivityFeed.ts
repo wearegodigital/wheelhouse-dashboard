@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import type { ActivityLog, User } from "@/lib/supabase/types"
+import { fetchUserMap, type UserInfo } from "@/lib/supabase/users"
+import type { ActivityLog } from "@/lib/supabase/types"
 
 export interface ActivityWithUser extends ActivityLog {
-  user?: Pick<User, "id" | "email" | "display_name" | "avatar_url">
+  user?: UserInfo
 }
 
 interface UseActivityFeedOptions {
@@ -20,7 +21,6 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
     queryFn: async () => {
       const supabase = createClient()
 
-      // Get current user's team
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -34,24 +34,18 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
 
       const teamId = (userData as { team_id: string | null } | null)?.team_id
 
-      // Build query
       let query = supabase
         .from("activity_log")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(limit)
 
-      // Filter by team if user has one
       if (teamId) {
         query = query.eq("team_id", teamId)
       }
-
-      // Filter by entity type if provided
       if (entityType) {
         query = query.eq("entity_type", entityType)
       }
-
-      // Filter by entity ID if provided
       if (entityId) {
         query = query.eq("entity_id", entityId)
       }
@@ -60,16 +54,11 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
 
       if (error) throw error
 
-      // Fetch user info for each activity
       const typedActivities = (activities || []) as ActivityLog[]
-      const userIds = [...new Set(typedActivities.map((a) => a.user_id).filter(Boolean))] as string[]
-      const { data: users } = await supabase
-        .from("users")
-        .select("id, email, display_name, avatar_url")
-        .in("id", userIds)
-
-      type UserInfo = Pick<User, "id" | "email" | "display_name" | "avatar_url">
-      const userMap = new Map(((users || []) as UserInfo[]).map((u) => [u.id, u]))
+      const userMap = await fetchUserMap(
+        supabase,
+        typedActivities.map((a) => a.user_id)
+      )
 
       return typedActivities.map((activity) => ({
         ...activity,
@@ -104,30 +93,6 @@ export function getActivityDescription(activity: ActivityWithUser): string {
   }
 }
 
-// Helper to get action icon name
-export function getActivityIcon(
-  action: ActivityLog["action"]
-): "plus" | "pencil" | "trash" | "play" | "check" | "x" | "message-square" {
-  switch (action) {
-    case "created":
-      return "plus"
-    case "updated":
-      return "pencil"
-    case "deleted":
-      return "trash"
-    case "started":
-      return "play"
-    case "completed":
-      return "check"
-    case "failed":
-      return "x"
-    case "commented":
-      return "message-square"
-    default:
-      return "pencil"
-  }
-}
-
 // Helper to get action color
 export function getActivityColor(action: ActivityLog["action"]): string {
   switch (action) {
@@ -136,13 +101,12 @@ export function getActivityColor(action: ActivityLog["action"]): string {
     case "updated":
       return "text-blue-500"
     case "deleted":
+    case "failed":
       return "text-red-500"
     case "started":
       return "text-purple-500"
     case "completed":
       return "text-emerald-500"
-    case "failed":
-      return "text-red-500"
     case "commented":
       return "text-amber-500"
     default:

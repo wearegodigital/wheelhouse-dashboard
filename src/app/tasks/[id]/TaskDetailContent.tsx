@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Clock, GitBranch, Activity } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getStatusBadgeVariant } from "@/lib/status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
@@ -38,7 +39,6 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           filter: `task_id=eq.${task.id}`,
         },
         async () => {
-          // Refetch agents when changes occur
           const { data } = await supabase
             .from("agents")
             .select("*")
@@ -61,7 +61,6 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           filter: `task_id=eq.${task.id}`,
         },
         async () => {
-          // Refetch events when changes occur
           const { data } = await supabase
             .from("events")
             .select("*")
@@ -128,7 +127,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge variant={getStatusVariant(task.status)} className="mt-1">
+              <Badge variant={getStatusBadgeVariant(task.status)} className="mt-1">
                 {task.status}
               </Badge>
             </div>
@@ -229,7 +228,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{agent.type}</Badge>
-                      <Badge variant={getAgentStatusVariant(agent.status)}>
+                      <Badge variant={getStatusBadgeVariant(agent.status)}>
                         {agent.status}
                       </Badge>
                       {agent.worker_index !== null && (
@@ -310,36 +309,4 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
       <TaskComments taskId={task.id} />
     </div>
   );
-}
-
-function getStatusVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "completed":
-      return "default";
-    case "running":
-    case "validating":
-      return "secondary";
-    case "failed":
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
-
-function getAgentStatusVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "completed":
-      return "default";
-    case "running":
-      return "secondary";
-    case "failed":
-      return "destructive";
-    default:
-      return "outline";
-  }
 }
