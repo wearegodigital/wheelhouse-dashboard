@@ -244,6 +244,34 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "team_id" | "token">>
       }
+      task_comments: {
+        Row: {
+          id: string
+          task_id: string
+          user_id: string
+          parent_id: string | null
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["task_comments"]["Row"], "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<Database["public"]["Tables"]["task_comments"]["Row"], "id" | "task_id" | "user_id">>
+      }
+      activity_log: {
+        Row: {
+          id: string
+          team_id: string | null
+          user_id: string | null
+          action: "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"
+          entity_type: "project" | "sprint" | "task" | "comment"
+          entity_id: string
+          entity_name: string | null
+          metadata: Record<string, unknown>
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["activity_log"]["Row"], "id" | "created_at">
+        Update: never
+      }
     }
     Views: {
       project_summary: {
@@ -326,4 +354,8 @@ export type User = Database["public"]["Tables"]["users"]["Row"]
 export type Team = Database["public"]["Tables"]["teams"]["Row"]
 export type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"]
 export type TeamInvite = Database["public"]["Tables"]["team_invites"]["Row"]
+export type TaskComment = Database["public"]["Tables"]["task_comments"]["Row"]
+export type ActivityLog = Database["public"]["Tables"]["activity_log"]["Row"]
 export type UserRole = "owner" | "admin" | "member" | "viewer"
+export type ActivityAction = "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"
+export type ActivityEntityType = "project" | "sprint" | "task" | "comment"

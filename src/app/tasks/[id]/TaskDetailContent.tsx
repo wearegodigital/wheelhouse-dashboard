@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
+import { TaskComments } from "@/components/tasks";
 import type { TaskSummary, Agent, Event } from "@/lib/supabase/types";
 
 interface TaskDetailContentProps {
@@ -304,6 +305,9 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           )}
         </CardContent>
       </Card>
+
+      {/* Comments Section */}
+      <TaskComments taskId={task.id} />
     </div>
   );
 }

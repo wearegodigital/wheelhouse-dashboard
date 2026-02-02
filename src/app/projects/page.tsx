@@ -1,6 +1,7 @@
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Button } from "@/components/ui/button"
 import { ProjectList } from "@/components/projects"
+import { ActivityFeed } from "@/components/activity"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
@@ -18,7 +19,14 @@ export default function ProjectsPage() {
         </Link>
       }
     >
-      <ProjectList />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ProjectList />
+        </div>
+        <div className="lg:col-span-1">
+          <ActivityFeed limit={20} />
+        </div>
+      </div>
     </PageContainer>
   )
 }
