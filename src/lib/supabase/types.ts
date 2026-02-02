@@ -228,6 +228,22 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["planning_messages"]["Row"], "id" | "created_at">
         Update: never
       }
+      team_invites: {
+        Row: {
+          id: string
+          team_id: string
+          email: string
+          role: "admin" | "member" | "viewer"
+          invited_by: string
+          status: "pending" | "accepted" | "expired" | "revoked"
+          token: string
+          expires_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "created_at" | "updated_at">
+        Update: Partial<Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "team_id" | "token">>
+      }
     }
     Views: {
       project_summary: {
@@ -309,3 +325,5 @@ export type PlanningMessage = Database["public"]["Tables"]["planning_messages"][
 export type User = Database["public"]["Tables"]["users"]["Row"]
 export type Team = Database["public"]["Tables"]["teams"]["Row"]
 export type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"]
+export type TeamInvite = Database["public"]["Tables"]["team_invites"]["Row"]
+export type UserRole = "owner" | "admin" | "member" | "viewer"

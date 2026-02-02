@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
-import { Plus, Trash2, Copy, Check } from "lucide-react"
+import { Plus, Trash2, Copy, Check, Users, ChevronRight } from "lucide-react"
+import Link from "next/link"
 
 interface ApiKey {
   id: string
@@ -154,6 +155,26 @@ export default function SettingsPage() {
       description="Manage API keys and preferences"
     >
       <div className="space-y-6">
+        {/* Team Settings Link */}
+        <Link href="/settings/team">
+          <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Team Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Manage team members, invites, and roles
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
         <section>
           <div className="flex items-center justify-between mb-4">
             <div>
