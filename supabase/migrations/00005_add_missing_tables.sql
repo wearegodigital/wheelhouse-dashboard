@@ -1,6 +1,9 @@
 -- Migration: 00005_add_missing_tables
 -- Description: Add task_comments and team_invites tables that were defined in types but not created
 
+-- Enable pgcrypto extension for gen_random_bytes (used for token generation)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================================================
 -- TASK COMMENTS TABLE
 -- ============================================================================
