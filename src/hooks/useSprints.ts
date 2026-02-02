@@ -4,11 +4,10 @@ import { deleteSprint as deleteSprintApi } from '@/lib/api/wheelhouse'
 import type { SprintSummary } from '@/lib/supabase/types'
 
 export function useSprints(projectId: string) {
-  const supabase = createClient()
-
   return useQuery({
     queryKey: ['sprints', projectId],
     queryFn: async () => {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('sprint_summary')
         .select('*')
@@ -24,11 +23,10 @@ export function useSprints(projectId: string) {
 }
 
 export function useSprint(id: string) {
-  const supabase = createClient()
-
   return useQuery({
     queryKey: ['sprint', id],
     queryFn: async () => {
+      const supabase = createClient()
       const { data, error } = await supabase
         .from('sprints')
         .select('*')

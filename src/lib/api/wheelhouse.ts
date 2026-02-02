@@ -48,26 +48,19 @@ async function callWheelhouseAPI(
   return data
 }
 
-export async function deleteProject(
-  projectId: string,
-  cascade: boolean = true
+type EntityType = "projects" | "sprints" | "tasks"
+
+async function deleteEntity(
+  entityType: EntityType,
+  id: string,
+  cascade: boolean = false
 ): Promise<DeleteResponse> {
   const params = new URLSearchParams()
   if (cascade) params.append("cascade", "true")
-
-  return callWheelhouseAPI("DELETE", `/projects/${projectId}?${params}`)
+  const query = params.toString()
+  return callWheelhouseAPI("DELETE", `/${entityType}/${id}${query ? `?${query}` : ""}`)
 }
 
-export async function deleteSprint(
-  sprintId: string,
-  cascade: boolean = true
-): Promise<DeleteResponse> {
-  const params = new URLSearchParams()
-  if (cascade) params.append("cascade", "true")
-
-  return callWheelhouseAPI("DELETE", `/sprints/${sprintId}?${params}`)
-}
-
-export async function deleteTask(taskId: string): Promise<DeleteResponse> {
-  return callWheelhouseAPI("DELETE", `/tasks/${taskId}`)
-}
+export const deleteProject = (id: string, cascade = true) => deleteEntity("projects", id, cascade)
+export const deleteSprint = (id: string, cascade = true) => deleteEntity("sprints", id, cascade)
+export const deleteTask = (id: string) => deleteEntity("tasks", id)
