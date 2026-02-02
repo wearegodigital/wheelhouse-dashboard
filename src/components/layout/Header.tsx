@@ -2,6 +2,7 @@
 import Link from "next/link"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { Settings, LogOut } from "lucide-react"
 
 export function Header() {
@@ -24,6 +25,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center space-x-2">
+          <ThemeToggle />
           {!isLoading && user && (
             <>
               <span className="text-sm text-muted-foreground">{user.email}</span>

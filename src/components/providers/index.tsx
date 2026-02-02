@@ -2,15 +2,18 @@
 import { QueryProvider } from "./QueryProvider"
 import { AuthProvider } from "@/components/auth/AuthProvider"
 import { ToastProvider } from "./ToastProvider"
+import { ThemeProvider } from "./ThemeProvider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </AuthProvider>
-    </QueryProvider>
+    <ThemeProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </AuthProvider>
+      </QueryProvider>
+    </ThemeProvider>
   )
 }
