@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import type { RealtimeChannel } from "@supabase/supabase-js"
@@ -10,6 +10,11 @@ export function useRealtimeSubscription(
 ) {
   const queryClient = useQueryClient()
 
+  // Memoize queryKey string to avoid complex expression in dependency array
+  const queryKeyString = useMemo(() => JSON.stringify(queryKey), [queryKey])
+  const filterColumn = filter?.column
+  const filterValue = filter?.value
+
   useEffect(() => {
     const supabase = createClient()
 
@@ -17,18 +22,18 @@ export function useRealtimeSubscription(
       event: "*" as const,
       schema: "public" as const,
       table,
-      ...(filter && { filter: `${filter.column}=eq.${filter.value}` }),
+      ...(filterColumn && filterValue && { filter: `${filterColumn}=eq.${filterValue}` }),
     }
 
     const channel: RealtimeChannel = supabase
       .channel(`${table}_changes`)
       .on("postgres_changes", config, () => {
-        queryClient.invalidateQueries({ queryKey })
+        queryClient.invalidateQueries({ queryKey: JSON.parse(queryKeyString) })
       })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [table, JSON.stringify(queryKey), filter?.column, filter?.value, queryClient])
+  }, [table, queryKeyString, filterColumn, filterValue, queryClient])
 }

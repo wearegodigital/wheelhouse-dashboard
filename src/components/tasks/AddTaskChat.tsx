@@ -23,7 +23,7 @@ export function AddTaskChat({
   onComplete,
 }: AddTaskChatProps) {
   const [inputValue, setInputValue] = useState("")
-  const [hasSentInitial, setHasSentInitial] = useState(false)
+  const hasSentInitialRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -38,11 +38,11 @@ export function AddTaskChat({
 
   // Send initial message on mount
   useEffect(() => {
-    if (!hasSentInitial && !isLoading && initialMessage) {
-      setHasSentInitial(true)
+    if (!hasSentInitialRef.current && !isLoading && initialMessage) {
+      hasSentInitialRef.current = true
       sendMessage(initialMessage)
     }
-  }, [hasSentInitial, isLoading, initialMessage, sendMessage])
+  }, [isLoading, initialMessage, sendMessage])
 
   // Auto-scroll to bottom when new messages arrive or phase changes
   useEffect(() => {

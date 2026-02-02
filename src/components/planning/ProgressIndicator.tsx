@@ -41,25 +41,30 @@ interface ProgressIndicatorProps {
 }
 
 export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) {
-  const [dots, setDots] = useState("")
+  const [dotCount, setDotCount] = useState(0)
+  const isComplete = phase.phase === "complete"
 
-  // Animate dots while waiting
+  // Animate dots while waiting (only when not complete)
   useEffect(() => {
-    if (phase.phase === "complete") {
-      setDots("")
+    if (isComplete) {
       return
     }
 
     const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "" : prev + "."))
+      setDotCount((prev) => (prev >= 3 ? 0 : prev + 1))
     }, 500)
 
-    return () => clearInterval(interval)
-  }, [phase.phase])
+    return () => {
+      clearInterval(interval)
+      setDotCount(0)
+    }
+  }, [isComplete, phase.phase])
+
+  // Derive dots string from count
+  const dots = isComplete ? "" : ".".repeat(dotCount)
 
   const IconComponent = iconMap[phase.icon] || Loader2
   const colorClass = phaseColors[phase.phase] || "text-muted-foreground"
-  const isComplete = phase.phase === "complete"
   const shouldAnimate = !isComplete
 
   return (

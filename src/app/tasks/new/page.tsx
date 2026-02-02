@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useProjects } from "@/hooks/useProjects"
 import { AddTaskChat } from "@/components/tasks/AddTaskChat"
-import { FolderPlus, Layers, ListTodo, GitBranch } from "lucide-react"
+import { Layers, ListTodo, GitBranch } from "lucide-react"
 
 type DecompositionLevel = "project" | "sprint" | "task"
 

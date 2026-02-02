@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import type { TaskSummary, TaskFilters } from "@/types"
 
@@ -7,10 +7,15 @@ export function useTasks(filters?: TaskFilters) {
     queryKey: ["tasks", filters],
     queryFn: async () => {
       const supabase = createClient()
+
+      // Determine sort column and order
+      const sortBy = filters?.sortBy || "created_at"
+      const sortOrder = filters?.sortOrder || "desc"
+
       let query = supabase
         .from("task_summary")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order(sortBy, { ascending: sortOrder === "asc" })
 
       if (filters?.status) {
         query = query.eq("status", filters.status)
@@ -23,6 +28,12 @@ export function useTasks(filters?: TaskFilters) {
       }
       if (filters?.search) {
         query = query.ilike("description", `%${filters.search}%`)
+      }
+      if (filters?.dateFrom) {
+        query = query.gte("created_at", filters.dateFrom)
+      }
+      if (filters?.dateTo) {
+        query = query.lte("created_at", filters.dateTo)
       }
 
       const { data, error } = await query

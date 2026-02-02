@@ -52,6 +52,10 @@ export interface TaskFilters {
   projectId?: string
   sprintId?: string
   search?: string
+  dateFrom?: string
+  dateTo?: string
+  sortBy?: "created_at" | "updated_at" | "status" | "progress"
+  sortOrder?: "asc" | "desc"
 }
 
 export interface ProjectFilters {

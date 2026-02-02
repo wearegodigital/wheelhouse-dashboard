@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,17 +29,12 @@ export default function SettingsPage() {
 
   const supabase = createClient()
 
-  useEffect(() => {
-    loadUser()
-    loadApiKeys()
-  }, [])
-
-  async function loadUser() {
+  const loadUser = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
-  }
+  }, [supabase.auth])
 
-  async function loadApiKeys() {
+  const loadApiKeys = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -62,7 +57,12 @@ export default function SettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    loadUser()
+    loadApiKeys()
+  }, [loadUser, loadApiKeys])
 
   async function createApiKey() {
     if (!newKeyName.trim() || !user) return

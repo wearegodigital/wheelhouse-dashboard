@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { PageContainer } from "@/components/layout/PageContainer"
-import { TaskList } from "@/components/tasks"
 import { Button } from "@/components/ui/button"
+import { TasksPageContent } from "./TasksPageContent"
 
 export default function TasksPage() {
   return (
@@ -18,7 +18,7 @@ export default function TasksPage() {
         </Link>
       }
     >
-      <TaskList />
+      <TasksPageContent />
     </PageContainer>
   )
 }

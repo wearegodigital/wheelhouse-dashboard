@@ -128,7 +128,7 @@ async function seed() {
     .single();
 
   // Sprint 3: MFA (Pending)
-  const { data: sprint3 } = await supabase
+  await supabase
     .from("sprints")
     .insert({
       project_id: project1.id,
@@ -353,7 +353,7 @@ async function seed() {
 
   // Agents and events for failed task
   if (failedTask) {
-    const { data: failedAgents } = await supabase
+    await supabase
       .from("agents")
       .insert([
         {
