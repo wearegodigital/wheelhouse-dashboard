@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import { deleteProject as deleteProjectApi } from "@/lib/api/wheelhouse"
+import { deleteProject as deleteProjectApi, createProject as createProjectApi } from "@/lib/api/wheelhouse"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
 export function useProjects(filters?: ProjectFilters) {
@@ -48,15 +48,12 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { name: string; description?: string; repo_url?: string; team_id?: string }) => {
-      const supabase = createClient()
-      const { data: project, error } = await supabase
-        .from("projects")
-        .insert(data as never)
-        .select()
-        .single()
-      if (error) throw error
-      return project
+    mutationFn: async (data: { name: string; description?: string; repo_url?: string }) => {
+      const result = await createProjectApi(data)
+      if (!result.success) {
+        throw new Error(result.message || "Failed to create project")
+      }
+      return result
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] })
