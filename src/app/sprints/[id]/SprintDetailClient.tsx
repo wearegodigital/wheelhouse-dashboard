@@ -1,35 +1,22 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { TaskList } from "@/components/tasks/TaskList";
 import type { SprintSummary } from "@/lib/supabase/types";
+import { useDeleteSprint } from "@/hooks/useSprints";
+import { getStatusBadgeVariant } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 interface SprintDetailClientProps {
   sprint: SprintSummary;
-}
-
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case "completed":
-      return "success";
-    case "cancelled":
-      return "destructive";
-    case "running":
-      return "default";
-    case "paused":
-      return "secondary";
-    case "ready":
-      return "outline";
-    case "draft":
-      return "outline";
-    default:
-      return "outline";
-  }
 }
 
 function getStatusIcon(status: string) {
@@ -48,6 +35,19 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
     sprint.task_count > 0
       ? Math.round((sprint.tasks_completed / sprint.task_count) * 100)
       : 0;
+
+  const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteSprint = useDeleteSprint();
+
+  const handleDelete = async () => {
+    try {
+      await deleteSprint.mutateAsync(sprint.id);
+      router.push(`/projects/${sprint.project_id}`);
+    } catch (error) {
+      console.error("Failed to delete sprint:", error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -77,11 +77,21 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
           )}
         </div>
 
-        <ExecutionControls
-          level="sprint"
-          id={sprint.id}
-          status={sprint.status}
-        />
+        <div className="flex items-center gap-2">
+          <ExecutionControls
+            level="sprint"
+            id={sprint.id}
+            status={sprint.status}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Sprint Metrics */}
@@ -211,6 +221,18 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
         <h2 className="text-2xl font-bold tracking-tight mb-4">Tasks</h2>
         <TaskList filters={{ sprintId: sprint.id }} />
       </div>
+
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Sprint"
+        description={`Are you sure you want to delete "${sprint.name}"? This will also delete all tasks in this sprint. This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDelete}
+        isLoading={deleteSprint.isPending}
+      />
     </div>
   );
 }

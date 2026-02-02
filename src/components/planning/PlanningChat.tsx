@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { usePlanningChat } from "@/hooks/usePlanningChat"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { ProgressIndicator } from "./ProgressIndicator"
 import { MessageBubble } from "./MessageBubble"
 import type { DecompositionRecommendation } from "@/types"
@@ -15,7 +17,10 @@ interface PlanningChatProps {
 }
 
 export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
+  const router = useRouter()
   const [inputValue, setInputValue] = useState("")
+  const [showApprovalConfirm, setShowApprovalConfirm] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const {
     messages,
@@ -97,11 +102,22 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
       <CardFooter className="flex-col gap-4">
         {currentRecommendation && (
           <div className="w-full flex gap-2">
-            <Button onClick={approveRecommendation} className="flex-1">
-              Approve Recommendations
+            <Button
+              onClick={() => setShowApprovalConfirm(true)}
+              className="flex-1"
+            >
+              Yes, Create These
             </Button>
-            <Button variant="outline" className="flex-1">
-              Reject & Refine
+            <Button
+              variant="outline"
+              onClick={() => {
+                // User wants to continue refining - focus on input for more conversation
+                const input = document.querySelector('input[placeholder="Describe what you want to build..."]') as HTMLInputElement
+                input?.focus()
+              }}
+              className="flex-1"
+            >
+              No, Let Me Refine
             </Button>
           </div>
         )}
@@ -119,6 +135,27 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
           </Button>
         </div>
       </CardFooter>
+
+      <ConfirmationDialog
+        open={showApprovalConfirm}
+        onOpenChange={setShowApprovalConfirm}
+        title="Create Project Structure"
+        description="This will create the project, sprints, and tasks based on the recommendations above. Are you sure you want to proceed?"
+        confirmLabel="Yes, Create"
+        cancelLabel="Cancel"
+        isLoading={isApproving}
+        onConfirm={async () => {
+          setIsApproving(true)
+          try {
+            const result = await approveRecommendation()
+            if (result?.projectId) {
+              router.push(`/projects/${result.projectId}`)
+            }
+          } finally {
+            setIsApproving(false)
+          }
+        }}
+      />
     </Card>
   )
 }

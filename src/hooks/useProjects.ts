@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
@@ -40,5 +40,65 @@ export function useProject(id: string) {
       return data
     },
     enabled: !!id,
+  })
+}
+
+export function useCreateProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string; repo_url?: string; team_id?: string }) => {
+      const supabase = createClient()
+      const { data: project, error } = await supabase
+        .from("projects")
+        .insert(data as never)
+        .select()
+        .single()
+      if (error) throw error
+      return project
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+    },
+  })
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; status?: string; repo_url?: string }) => {
+      const supabase = createClient()
+      const { data: project, error } = await supabase
+        .from("projects")
+        .update(data as never)
+        .eq("id", id)
+        .select()
+        .single()
+      if (error) throw error
+      return project
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] })
+    },
+  })
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+    },
   })
 }

@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Recommendation approved and entities created',
+      projectId: projectId || null,
     })
   } catch (error) {
     console.error('Approve API error:', error)

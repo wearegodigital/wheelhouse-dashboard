@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Clock, GitBranch, Activity } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ExternalLink, Clock, GitBranch, Activity, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusBadgeVariant } from "@/lib/status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { TaskComments } from "@/components/tasks";
+import { useDeleteTask } from "@/hooks/useTasks";
 import type { TaskSummary, Agent, Event } from "@/lib/supabase/types";
 
 interface TaskDetailContentProps {
@@ -22,6 +26,9 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
   const [agents, setAgents] = useState(initialAgents);
   const [events, setEvents] = useState(initialEvents);
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteTask = useDeleteTask();
 
   // Real-time subscriptions for agents and events
   useEffect(() => {
@@ -102,6 +109,15 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
     // Real-time subscription will automatically update the UI
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteTask.mutateAsync(task.id);
+      router.push("/tasks");
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Task Overview Card */}
@@ -115,12 +131,22 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
                 {task.created_by_name && ` by ${task.created_by_name}`}
               </CardDescription>
             </div>
-            <ExecutionControls
-              level="task"
-              id={task.id}
-              status={currentStatus}
-              onStatusChange={handleStatusChange}
-            />
+            <div className="flex items-center gap-2">
+              <ExecutionControls
+                level="task"
+                id={task.id}
+                status={currentStatus}
+                onStatusChange={handleStatusChange}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -307,6 +333,18 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
 
       {/* Comments Section */}
       <TaskComments taskId={task.id} />
+
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDelete}
+        isLoading={deleteTask.isPending}
+      />
     </div>
   );
 }

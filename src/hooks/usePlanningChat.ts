@@ -22,6 +22,7 @@ export interface ProgressPhase {
 interface UsePlanningChatOptions {
   projectId?: string
   sprintId?: string
+  skipHistory?: boolean
   onApprove?: (recommendation: DecompositionRecommendation) => void
 }
 
@@ -64,6 +65,11 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   useEffect(() => {
     async function loadConversation() {
       if (!options.projectId && !options.sprintId) {
+        setIsLoading(false)
+        return
+      }
+
+      if (options.skipHistory) {
         setIsLoading(false)
         return
       }
@@ -122,7 +128,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
     }
 
     loadConversation()
-  }, [options.projectId, options.sprintId, supabase])
+  }, [options.projectId, options.sprintId, options.skipHistory, supabase])
 
   // Create or get conversation
   const ensureConversation = useCallback(async (): Promise<string> => {
@@ -334,7 +340,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
     ]
   )
 
-  const approveRecommendation = useCallback(async () => {
+  const approveRecommendation = useCallback(async (): Promise<{ projectId?: string } | undefined> => {
     if (!currentRecommendation || !conversationId) return
 
     // Update conversation status
@@ -343,7 +349,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       .update({ status: "approved", completed_at: new Date().toISOString() } as never)
       .eq("id", conversationId)
 
-    await fetch("/api/planning/approve", {
+    const response = await fetch("/api/planning/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -354,7 +360,10 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       }),
     })
 
+    const result = await response.json()
     options.onApprove?.(currentRecommendation)
+
+    return { projectId: result.projectId || options.projectId }
   }, [currentRecommendation, conversationId, options, supabase])
 
   const reset = useCallback(async () => {

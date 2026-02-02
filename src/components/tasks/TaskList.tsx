@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useTasks } from "@/hooks/useTasks"
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription"
 import type { TaskFilters, TaskSummary } from "@/types"
@@ -18,29 +19,11 @@ import {
   PlayCircle,
   ShieldCheck,
 } from "lucide-react"
+import { getStatusBadgeVariant } from "@/lib/status"
 
 interface TaskListProps {
   filters?: TaskFilters
   className?: string
-}
-
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case "completed":
-      return "success"
-    case "failed":
-      return "destructive"
-    case "cancelled":
-      return "outline"
-    case "running":
-    case "validating":
-      return "default"
-    case "pending":
-    case "queued":
-      return "secondary"
-    default:
-      return "outline"
-  }
 }
 
 function getStatusIcon(status: string) {
@@ -116,8 +99,9 @@ export function TaskList({ filters, className }: TaskListProps) {
   return (
     <div className={cn("space-y-3", className)}>
       {tasks.map((task: TaskSummary) => (
-        <Card key={task.id} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Link href={`/tasks/${task.id}`} key={task.id} className="block">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -197,6 +181,7 @@ export function TaskList({ filters, className }: TaskListProps) {
             </div>
           </CardContent>
         </Card>
+        </Link>
       ))}
     </div>
   )

@@ -2,34 +2,39 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Calendar, GitBranch } from "lucide-react";
+import { ExternalLink, Calendar, GitBranch, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { SprintList } from "@/components/sprints";
 import { PlanningChat } from "@/components/planning";
+import { useDeleteProject } from "@/hooks/useProjects";
+import { getStatusBadgeVariant } from "@/lib/status";
 import type { ProjectSummary } from "@/lib/supabase/types";
 
 interface ProjectDetailClientProps {
   project: ProjectSummary;
 }
 
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
-  draft: "outline",
-  planning: "secondary",
-  ready: "warning",
-  running: "default",
-  paused: "warning",
-  completed: "success",
-  cancelled: "destructive",
-};
-
 export function ProjectDetailClient({ project: initialProject }: ProjectDetailClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "planning">("overview");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteProject = useDeleteProject();
 
   const handleStatusChange = () => {
     router.refresh();
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteProject.mutateAsync(initialProject.id);
+      router.push("/projects");
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+    }
   };
 
   return (
@@ -39,18 +44,28 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">{initialProject.name}</h1>
-            <Badge variant={STATUS_VARIANTS[initialProject.status] || "outline"}>
+            <Badge variant={getStatusBadgeVariant(initialProject.status)}>
               {initialProject.status}
             </Badge>
           </div>
           <p className="text-muted-foreground">{initialProject.description}</p>
         </div>
-        <ExecutionControls
-          level="project"
-          id={initialProject.id}
-          status={initialProject.status}
-          onStatusChange={handleStatusChange}
-        />
+        <div className="flex items-center gap-2">
+          <ExecutionControls
+            level="project"
+            id={initialProject.id}
+            status={initialProject.status}
+            onStatusChange={handleStatusChange}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -191,6 +206,18 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       {activeTab === "planning" && (
         <PlanningChat projectId={initialProject.id} />
       )}
+
+      <ConfirmationDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Project"
+        description={`Are you sure you want to delete "${initialProject.name}"? This will also delete all sprints and tasks. This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDelete}
+        isLoading={deleteProject.isPending}
+      />
     </div>
   );
 }

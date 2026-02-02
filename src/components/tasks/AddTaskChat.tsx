@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { usePlanningChat } from "@/hooks/usePlanningChat"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,7 +23,9 @@ export function AddTaskChat({
   suggestedLevel,
   onComplete,
 }: AddTaskChatProps) {
+  const router = useRouter()
   const [inputValue, setInputValue] = useState("")
+  const [isApproving, setIsApproving] = useState(false)
   const hasSentInitialRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -34,7 +37,7 @@ export function AddTaskChat({
     currentPhase,
     sendMessage,
     approveRecommendation,
-  } = usePlanningChat({ projectId })
+  } = usePlanningChat({ projectId, skipHistory: true })
 
   // Send initial message on mount
   useEffect(() => {
@@ -63,8 +66,17 @@ export function AddTaskChat({
   }
 
   const handleApprove = async () => {
-    await approveRecommendation()
-    onComplete?.()
+    setIsApproving(true)
+    try {
+      const result = await approveRecommendation()
+      if (result?.projectId) {
+        router.push(`/projects/${result.projectId}`)
+      } else {
+        onComplete?.()
+      }
+    } finally {
+      setIsApproving(false)
+    }
   }
 
   return (
@@ -114,10 +126,10 @@ export function AddTaskChat({
               The Orchestrator has proposed a breakdown. Review it above and approve when ready.
             </p>
             <div className="flex gap-2">
-              <Button onClick={handleApprove} className="flex-1">
-                Approve & Create
+              <Button onClick={handleApprove} disabled={isApproving} className="flex-1">
+                {isApproving ? "Creating..." : "Approve & Create"}
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" disabled={isApproving} className="flex-1">
                 Continue Refining
               </Button>
             </div>
