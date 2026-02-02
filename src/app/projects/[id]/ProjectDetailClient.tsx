@@ -33,7 +33,12 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       await deleteProject.mutateAsync(initialProject.id);
       router.push("/projects");
     } catch (error) {
-      console.error("Failed to delete project:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      if (message.includes("conflict") || message.includes("running")) {
+        alert("Cannot delete a running project. Please cancel execution first.");
+      } else {
+        console.error("Failed to delete project:", error);
+      }
     }
   };
 

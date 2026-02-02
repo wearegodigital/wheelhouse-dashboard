@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
+import { deleteTask as deleteTaskApi } from "@/lib/api/wheelhouse"
 import type { TaskSummary, TaskFilters } from "@/types"
 
 export function useTasks(filters?: TaskFilters) {
@@ -15,6 +16,7 @@ export function useTasks(filters?: TaskFilters) {
       let query = supabase
         .from("task_summary")
         .select("*")
+        .is("deleted_at", null)
         .order(sortBy, { ascending: sortOrder === "asc" })
 
       if (filters?.status) {
@@ -52,6 +54,7 @@ export function useTask(id: string) {
         .from("tasks")
         .select("*")
         .eq("id", id)
+        .is("deleted_at", null)
         .single()
       if (error) throw error
       return data
@@ -127,12 +130,12 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("tasks")
-        .delete()
-        .eq("id", id)
-      if (error) throw error
+      // Use Modal API for deletion to ensure JSONL sync
+      const result = await deleteTaskApi(id)
+      if (!result.success) {
+        throw new Error(result.message || "Failed to delete task")
+      }
+      return result
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })

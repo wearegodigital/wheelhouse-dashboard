@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
+import { deleteProject as deleteProjectApi } from "@/lib/api/wheelhouse"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
 export function useProjects(filters?: ProjectFilters) {
@@ -10,6 +11,7 @@ export function useProjects(filters?: ProjectFilters) {
       let query = supabase
         .from("project_summary")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
 
       if (filters?.status) {
@@ -35,6 +37,7 @@ export function useProject(id: string) {
         .from("projects")
         .select("*")
         .eq("id", id)
+        .is("deleted_at", null)
         .single()
       if (error) throw error
       return data
@@ -90,12 +93,12 @@ export function useDeleteProject() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", id)
-      if (error) throw error
+      // Use Modal API for deletion to ensure JSONL sync
+      const result = await deleteProjectApi(id, true)
+      if (!result.success) {
+        throw new Error(result.message || "Failed to delete project")
+      }
+      return result
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] })

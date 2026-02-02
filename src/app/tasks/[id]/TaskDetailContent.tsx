@@ -114,7 +114,12 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
       await deleteTask.mutateAsync(task.id);
       router.push("/tasks");
     } catch (error) {
-      console.error("Failed to delete task:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      if (message.includes("conflict") || message.includes("running") || message.includes("in_progress")) {
+        alert("Cannot delete a running task. Please cancel execution first.");
+      } else {
+        console.error("Failed to delete task:", error);
+      }
     }
   };
 

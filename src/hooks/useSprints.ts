@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { deleteSprint as deleteSprintApi } from '@/lib/api/wheelhouse'
 import type { SprintSummary } from '@/lib/supabase/types'
 
 export function useSprints(projectId: string) {
@@ -12,6 +13,7 @@ export function useSprints(projectId: string) {
         .from('sprint_summary')
         .select('*')
         .eq('project_id', projectId)
+        .is('deleted_at', null)
         .order('order_index')
 
       if (error) throw error
@@ -31,6 +33,7 @@ export function useSprint(id: string) {
         .from('sprints')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)
         .single()
       if (error) throw error
       return data
@@ -94,25 +97,17 @@ export function useDeleteSprint() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const supabase = createClient()
-      // Get project_id before delete for cache invalidation
-      const { data: sprint } = await supabase
-        .from("sprints")
-        .select("project_id")
-        .eq("id", id)
-        .single<{ project_id: string }>()
-      const { error } = await supabase
-        .from("sprints")
-        .delete()
-        .eq("id", id)
-      if (error) throw error
-      return sprint?.project_id
-    },
-    onSuccess: (projectId) => {
-      if (projectId) {
-        queryClient.invalidateQueries({ queryKey: ["sprints", projectId] })
+    mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
+      // Use Modal API for deletion to ensure JSONL sync
+      const result = await deleteSprintApi(id, true)
+      if (!result.success) {
+        throw new Error(result.message || "Failed to delete sprint")
       }
+      return { result, projectId }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["sprints", data.projectId] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }

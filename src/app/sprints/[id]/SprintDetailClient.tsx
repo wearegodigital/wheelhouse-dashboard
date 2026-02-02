@@ -42,10 +42,15 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
 
   const handleDelete = async () => {
     try {
-      await deleteSprint.mutateAsync(sprint.id);
+      await deleteSprint.mutateAsync({ id: sprint.id, projectId: sprint.project_id });
       router.push(`/projects/${sprint.project_id}`);
     } catch (error) {
-      console.error("Failed to delete sprint:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      if (message.includes("conflict") || message.includes("running")) {
+        alert("Cannot delete a running sprint. Please cancel execution first.");
+      } else {
+        console.error("Failed to delete sprint:", error);
+      }
     }
   };
 
