@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 // Use Edge Runtime for proper SSE streaming on Vercel
 export const runtime = 'edge'
@@ -9,6 +10,37 @@ interface PlanningChatRequest {
   conversationId?: string
   message: string
   history?: Array<{ role: string; content: string }>
+}
+
+// Helper to get repo URL from project or sprint
+async function getRepoUrl(projectId?: string, sprintId?: string): Promise<string> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) return ''
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  if (projectId) {
+    const { data } = await supabase
+      .from('projects')
+      .select('repo_url')
+      .eq('id', projectId)
+      .single()
+    return data?.repo_url || ''
+  }
+
+  if (sprintId) {
+    const { data } = await supabase
+      .from('sprints')
+      .select('project_id, projects(repo_url)')
+      .eq('id', sprintId)
+      .single()
+    // @ts-expect-error - nested select typing
+    return data?.projects?.repo_url || ''
+  }
+
+  return ''
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +71,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call Modal API with history for context
+    // Get repo URL for codebase awareness
+    const repoUrl = await getRepoUrl(body.projectId, body.sprintId)
+
+    // Call Modal API with history and repo URL for codebase context
     const response = await fetch(`${modalApiUrl}/planning/chat`, {
       method: 'POST',
       headers: {
@@ -47,10 +82,11 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         message: body.message,
+        repoUrl, // Include repo URL for codebase awareness
         projectId: body.projectId,
         sprintId: body.sprintId,
         conversationId: body.conversationId,
-        history: body.history || [], // Include conversation history for context
+        history: body.history || [],
       }),
     })
 
