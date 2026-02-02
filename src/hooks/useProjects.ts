@@ -11,7 +11,6 @@ export function useProjects(filters?: ProjectFilters) {
       let query = supabase
         .from("project_summary")
         .select("*")
-        .is("deleted_at", null)
         .order("created_at", { ascending: false })
 
       if (filters?.status) {
@@ -37,7 +36,6 @@ export function useProject(id: string) {
         .from("projects")
         .select("*")
         .eq("id", id)
-        .is("deleted_at", null)
         .single()
       if (error) throw error
       return data
