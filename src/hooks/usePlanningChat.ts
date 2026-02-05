@@ -205,9 +205,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   const sendMessage = useCallback(
     async (content: string) => {
       // Touch session on message send
-      if (session) {
-        setSession(touchSession(session))
-      }
+      setSession(prev => prev ? touchSession(prev) : prev)
 
       // Ensure we have a conversation
       const convId = await ensureConversation()
@@ -251,6 +249,21 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           }),
         })
 
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('[Planning] API error:', response.status, errorText)
+
+          // Handle specific error codes
+          if (response.status === 404) {
+            // Session expired - clear backend ID and could retry
+            setSession(prev => prev ? { ...prev, backendConversationId: null } : prev)
+          }
+
+          setIsStreaming(false)
+          setIsLoading(false)
+          throw new Error(`Planning API error: ${response.status}`)
+        }
+
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
 
@@ -280,24 +293,24 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                 try {
 
                 // Capture backend conversation_id from first SSE event
-                if (data.conversation_id && session && !session.backendConversationId) {
+                if (data.conversation_id) {
                   console.log('[Planning] Received backend conversation_id:', data.conversation_id)
-                  setSession(setBackendConversationId(session, data.conversation_id as string))
+                  setSession(prev => prev && !prev.backendConversationId ? setBackendConversationId(prev, data.conversation_id as string) : prev)
                 }
 
                 // Handle progress phase updates
                 if (data.phase) {
-                  const sessionAwarePhase = getSessionAwarePhase(data.phase as string, session)
-                  setCurrentPhase({
-                    phase: sessionAwarePhase,
-                    message: (data.message as string) || "",
-                    icon: (data.icon as string) || "spinner",
-                    elapsed: data.elapsed as number | undefined,
+                  setSession(prev => {
+                    const sessionAwarePhase = getSessionAwarePhase(data.phase as string, prev)
+                    setCurrentPhase({
+                      phase: sessionAwarePhase,
+                      message: (data.message as string) || "",
+                      icon: (data.icon as string) || "spinner",
+                      elapsed: data.elapsed as number | undefined,
+                    })
+                    // Touch session on any activity
+                    return prev ? touchSession(prev) : prev
                   })
-                  // Touch session on any activity
-                  if (session) {
-                    setSession(touchSession(session))
-                  }
                   // Clear phase when complete
                   if (data.phase === "complete") {
                     setTimeout(() => setCurrentPhase(null), 1000)
@@ -392,12 +405,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   } | undefined> => {
     if (!currentRecommendation || !conversationId) return
 
-    // Update conversation status
-    await supabase
-      .from("planning_conversations")
-      .update({ status: "approved", completed_at: new Date().toISOString() } as never)
-      .eq("id", conversationId)
-
     const response = await fetch("/api/planning/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -422,7 +429,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           : `${result.verification.successful}/${result.verification.total} entities synced. Some may still be syncing.`
       } : undefined
     }
-  }, [currentRecommendation, conversationId, options, supabase, session])
+  }, [currentRecommendation, conversationId, options, session])
 
   const reset = useCallback(async () => {
     // Mark current conversation as abandoned if exists

@@ -43,15 +43,22 @@ interface ProgressIndicatorProps {
 
 export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) {
   const [dotCount, setDotCount] = useState(0)
-  const [startTime, setStartTime] = useState(Date.now())
   const [messageIndex, setMessageIndex] = useState(0)
   const isComplete = phase.phase === "complete"
 
-  // Reset startTime when phase changes
+  // Track phase-specific start time - updates when phase changes
+  const [phaseKey, setPhaseKey] = useState(phase.phase)
+  const [startTime, setStartTime] = useState(0)
+
+  // Reset startTime and messageIndex when phase changes
   useEffect(() => {
-    setStartTime(Date.now())
-    setMessageIndex(0)
-  }, [phase.phase])
+    if (phase.phase !== phaseKey) {
+      // eslint-disable-next-line -- Phase tracking state must update on external phase change
+      setPhaseKey(phase.phase)
+      setStartTime(Date.now())
+      setMessageIndex(0)
+    }
+  }, [phase.phase, phaseKey])
 
   // Cycle messages every 5 seconds for variety
   useEffect(() => {

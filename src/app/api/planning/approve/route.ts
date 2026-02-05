@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyMultipleEntities } from '@/lib/sync-verification'
 
 /**
  * Planning Approval API Route
@@ -78,29 +79,65 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Update LOCAL conversation status (this stays in Supabase - not event-sourced)
-    if (supabaseConversationId) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        await supabase
-          .from('planning_conversations')
-          .update({
-            status: 'approved',
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', supabaseConversationId)
+    if (supabaseConversationId && supabaseUrl && supabaseServiceKey) {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey)
+      await supabase
+        .from('planning_conversations')
+        .update({
+          status: 'approved',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', supabaseConversationId)
+    }
+
+    // 3. Verify entities synced to Supabase
+    let verificationResult
+    if (supabaseUrl && supabaseServiceKey) {
+      const entitiesToVerify: Array<{ type: 'projects' | 'sprints' | 'tasks', id: string }> = []
+
+      // Add project if created
+      if (result.project_id) {
+        entitiesToVerify.push({ type: 'projects', id: result.project_id })
+      }
+
+      // Add sprints if created
+      if (result.sprint_ids && result.sprint_ids.length > 0) {
+        result.sprint_ids.forEach(sprintId => {
+          entitiesToVerify.push({ type: 'sprints', id: sprintId })
+        })
+      }
+
+      // Add tasks if created
+      if (result.task_ids && result.task_ids.length > 0) {
+        result.task_ids.forEach(taskId => {
+          entitiesToVerify.push({ type: 'tasks', id: taskId })
+        })
+      }
+
+      if (entitiesToVerify.length > 0) {
+        verificationResult = await verifyMultipleEntities(
+          entitiesToVerify,
+          supabaseUrl,
+          supabaseServiceKey
+        )
+
+        if (!verificationResult.verified) {
+          console.warn('Some entities failed to sync:', verificationResult.failures)
+        }
       }
     }
 
-    // 3. Return result with created entity IDs
+    // 4. Return result with created entity IDs and verification status
     return NextResponse.json({
       success: true,
       message: result.message || 'Recommendation approved and entities created',
       projectId: result.project_id || projectId,
       sprintIds: result.sprint_ids || [],
       taskIds: result.task_ids || [],
+      verification: verificationResult,
     })
 
   } catch (error) {
