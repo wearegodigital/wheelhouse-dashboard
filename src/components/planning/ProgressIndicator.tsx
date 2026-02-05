@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import type { ProgressPhase } from "@/hooks/usePlanningChat"
 import { cn } from "@/lib/utils"
+import { getStatusMessage, shouldEnhanceMessage } from "@/lib/status-messages"
 import {
   Loader2,
   Server,
@@ -42,7 +43,28 @@ interface ProgressIndicatorProps {
 
 export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) {
   const [dotCount, setDotCount] = useState(0)
+  const [startTime, setStartTime] = useState(Date.now())
+  const [messageIndex, setMessageIndex] = useState(0)
   const isComplete = phase.phase === "complete"
+
+  // Reset startTime when phase changes
+  useEffect(() => {
+    setStartTime(Date.now())
+    setMessageIndex(0)
+  }, [phase.phase])
+
+  // Cycle messages every 5 seconds for variety
+  useEffect(() => {
+    if (isComplete) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => prev + 1)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isComplete])
 
   // Animate dots while waiting (only when not complete)
   useEffect(() => {
@@ -62,6 +84,11 @@ export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) 
 
   // Derive dots string from count
   const dots = isComplete ? "" : ".".repeat(dotCount)
+
+  // Get enhanced message if Modal sent generic phase name
+  const displayMessage = shouldEnhanceMessage(phase.phase, phase.message)
+    ? getStatusMessage(phase.phase, startTime + messageIndex * 5000)
+    : phase.message
 
   const IconComponent = iconMap[phase.icon] || Loader2
   const colorClass = phaseColors[phase.phase] || "text-muted-foreground"
@@ -92,7 +119,7 @@ export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) 
 
       <div className="flex-1 min-w-0">
         <div className={cn("font-medium text-sm", colorClass)}>
-          {phase.message}
+          {displayMessage}
           {!isComplete && <span className="inline-block w-6">{dots}</span>}
         </div>
         {phase.elapsed !== undefined && (

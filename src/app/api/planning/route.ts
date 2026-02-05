@@ -93,6 +93,19 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Modal API error:', response.status, errorText)
+
+      // Pass through 404 specifically for session expiration
+      if (response.status === 404) {
+        return new Response(
+          JSON.stringify({
+            error: 'Session not found or expired',
+            code: 'SESSION_EXPIRED',
+            details: errorText
+          }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+
       return new Response(
         JSON.stringify({
           error: 'Failed to connect to planning service',

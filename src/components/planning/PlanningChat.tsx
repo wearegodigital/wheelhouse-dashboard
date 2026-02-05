@@ -11,6 +11,31 @@ import { ProgressIndicator } from "./ProgressIndicator"
 import { MessageBubble } from "./MessageBubble"
 import type { DecompositionRecommendation } from "@/types"
 
+/**
+ * Determine if a recommendation is "simple" enough for single-click creation.
+ * Simple = ≤5 tasks, ≤2 sprints, no high-complexity tasks
+ */
+function isSimpleRecommendation(rec: DecompositionRecommendation | null): boolean {
+  if (!rec) return false
+
+  // Count total tasks
+  const standaloneTaskCount = rec.tasks?.length ?? 0
+  const sprintTaskCount = rec.sprints?.reduce((sum, s) => sum + (s.tasks?.length ?? 0), 0) ?? 0
+  const totalTasks = standaloneTaskCount + sprintTaskCount
+
+  // Count sprints
+  const totalSprints = rec.sprints?.length ?? 0
+
+  // Check for high complexity tasks
+  const hasHighComplexityStandalone = rec.tasks?.some(t => t.estimatedComplexity === 'high') ?? false
+  const hasHighComplexitySprint = rec.sprints?.some(s =>
+    s.tasks?.some(t => t.estimatedComplexity === 'high')
+  ) ?? false
+  const hasHighComplexity = hasHighComplexityStandalone || hasHighComplexitySprint
+
+  return totalTasks <= 5 && totalSprints <= 2 && !hasHighComplexity
+}
+
 interface PlanningChatProps {
   projectId?: string
   onApprove?: (recommendations: DecompositionRecommendation) => void
@@ -28,6 +53,7 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
     isLoading,
     currentRecommendation,
     currentPhase,
+    isReadyForApproval,
     sendMessage,
     approveRecommendation,
     reset,
@@ -100,25 +126,59 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
       </CardContent>
 
       <CardFooter className="flex-col gap-4">
-        {currentRecommendation && (
+        {currentRecommendation && isReadyForApproval && (
           <div className="w-full flex gap-2">
-            <Button
-              onClick={() => setShowApprovalConfirm(true)}
-              className="flex-1"
-            >
-              Yes, Create These
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // User wants to continue refining - focus on input for more conversation
-                const input = document.querySelector('input[placeholder="Describe what you want to build..."]') as HTMLInputElement
-                input?.focus()
-              }}
-              className="flex-1"
-            >
-              No, Let Me Refine
-            </Button>
+            {isSimpleRecommendation(currentRecommendation) ? (
+              <>
+                <Button
+                  onClick={async () => {
+                    setIsApproving(true)
+                    try {
+                      const result = await approveRecommendation()
+                      if (result?.projectId) {
+                        router.push(`/projects/${result.projectId}`)
+                      }
+                    } finally {
+                      setIsApproving(false)
+                    }
+                  }}
+                  disabled={isApproving}
+                  className="flex-1"
+                >
+                  {isApproving ? "Creating..." : "Create Now"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowApprovalConfirm(true)}
+                  disabled={isApproving}
+                  className="flex-1"
+                >
+                  Review Details
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setShowApprovalConfirm(true)}
+                  disabled={isApproving}
+                  className="flex-1"
+                >
+                  Review & Create
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // User wants to continue refining - focus on input for more conversation
+                    const input = document.querySelector('input[placeholder="Describe what you want to build..."]') as HTMLInputElement
+                    input?.focus()
+                  }}
+                  disabled={isApproving}
+                  className="flex-1"
+                >
+                  Refine Further
+                </Button>
+              </>
+            )}
           </div>
         )}
 
