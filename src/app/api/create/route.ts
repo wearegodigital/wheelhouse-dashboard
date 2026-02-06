@@ -114,6 +114,9 @@ export async function POST(request: NextRequest) {
       try {
         const supabase = await createClient()
         const projectPayload = payload as CreateProjectBody
+        // Cast needed: id and source_id are not in the typed Insert shape
+        // (they're normally auto-generated), but we set them explicitly here
+        // so the row matches what the sync worker would create.
         await supabase.from("projects").upsert({
           id: supabaseId,
           source_id: sourceId,
@@ -121,9 +124,9 @@ export async function POST(request: NextRequest) {
           description: projectPayload.description || "",
           repo_url: projectPayload.repo_url || "",
           default_branch: body.default_branch || "main",
-          status: "planning" as const,
+          status: "planning",
           metadata: {},
-        }, { onConflict: "id" })
+        } as never, { onConflict: "id" })
       } catch (err) {
         // Non-fatal: sync worker will catch up
         console.error("Supabase immediate insert failed (sync will catch up):", err)
