@@ -82,8 +82,9 @@ export async function DELETE(request: NextRequest) {
         .select("id")
         .eq("project_id", entityId)
 
-      if (sprints && sprints.length > 0) {
-        const sprintIds = sprints.map((s) => s.id)
+      const sprintRows = sprints as { id: string }[] | null
+      if (sprintRows && sprintRows.length > 0) {
+        const sprintIds = sprintRows.map((s) => s.id)
         // Delete tasks in those sprints
         await supabase.from("tasks").delete().in("sprint_id", sprintIds)
         // Delete the sprints
@@ -101,12 +102,23 @@ export async function DELETE(request: NextRequest) {
       await supabase.from("tasks").delete().eq("sprint_id", entityId)
     }
 
-    const { error } = await supabase.from(entityType).delete().eq("id", entityId)
+    // Delete the entity itself — use literal table names to satisfy typed client
+    let deleteError: { message: string } | null = null
+    if (entityType === "projects") {
+      const { error } = await supabase.from("projects").delete().eq("id", entityId)
+      deleteError = error
+    } else if (entityType === "sprints") {
+      const { error } = await supabase.from("sprints").delete().eq("id", entityId)
+      deleteError = error
+    } else {
+      const { error } = await supabase.from("tasks").delete().eq("id", entityId)
+      deleteError = error
+    }
 
-    if (error) {
-      console.error("Supabase delete error:", error)
+    if (deleteError) {
+      console.error("Supabase delete error:", deleteError)
       return NextResponse.json(
-        { success: false, message: error.message },
+        { success: false, message: deleteError.message },
         { status: 500 }
       )
     }
