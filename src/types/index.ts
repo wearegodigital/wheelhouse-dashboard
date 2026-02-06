@@ -1,6 +1,9 @@
 // Re-export database types
 export * from "@/lib/supabase/types"
 
+// Import specific types for use in this file
+import type { ExecutionPattern, DistributionMode, PatternConfig, ModelTier } from "@/lib/supabase/types"
+
 // Planning Chat types
 export interface DecompositionRecommendation {
   sprints?: SprintRecommendation[]
@@ -32,8 +35,12 @@ export interface ChatMessage {
 export interface ExecutionRequest {
   level: "project" | "sprint" | "task"
   id: string
-  mode?: "sequential" | "parallel" | "swarm" | "competitive"
+  action: "run" | "pause" | "cancel"
+  pattern?: ExecutionPattern
+  distribution?: DistributionMode
   workers?: number
+  patternConfig?: PatternConfig
+  modelTier?: ModelTier
 }
 
 export interface ExecutionStatus {

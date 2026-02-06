@@ -14,6 +14,11 @@ interface ExecutionRequest {
   level: ExecutionLevel
   id: string
   action: ExecutionAction
+  pattern?: string | null
+  distribution?: string
+  patternConfig?: Record<string, unknown>
+  modelTier?: string
+  workers?: number
 }
 
 interface ExecutionResponse {
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body: ExecutionRequest = await request.json()
-    const { level, id, action } = body
+    const { level, id, action, pattern, distribution, patternConfig, modelTier, workers } = body
 
     // Validate required fields
     if (!level || !id || !action) {
@@ -82,13 +87,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Build Modal request body with snake_case conversion
+    const modalBody: Record<string, unknown> = { level, id, action }
+    if (pattern !== undefined) modalBody.pattern = pattern
+    if (distribution !== undefined) modalBody.distribution = distribution
+    if (patternConfig !== undefined) modalBody.pattern_config = patternConfig
+    if (modelTier !== undefined) modalBody.model_tier = modelTier
+    if (workers !== undefined) modalBody.workers = workers
+
     // Make request to Modal backend
     const modalResponse = await fetch(`${modalApiUrl}/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ level, id, action }),
+      body: JSON.stringify(modalBody),
     })
 
     // Handle non-OK responses from Modal

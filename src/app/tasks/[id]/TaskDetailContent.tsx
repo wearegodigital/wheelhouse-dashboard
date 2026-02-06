@@ -5,13 +5,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Clock, GitBranch, Activity, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getStatusBadgeVariant } from "@/lib/status";
+import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant } from "@/lib/status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { TaskComments } from "@/components/tasks";
+import { PatternEventRenderer } from "@/components/events";
 import { useDeleteTask } from "@/hooks/useTasks";
 import type { TaskSummary, Agent, Event } from "@/lib/supabase/types";
 
@@ -146,6 +147,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
                 id={task.id}
                 status={currentStatus}
                 onStatusChange={handleStatusChange}
+                showPatternSelector={true}
               />
               <Button
                 variant="outline"
@@ -167,10 +169,15 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
               </Badge>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Mode</p>
-              <Badge variant="outline" className="mt-1">
-                {task.mode}
-              </Badge>
+              <p className="text-sm font-medium text-muted-foreground">Pattern</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant={getPatternBadgeVariant(task.pattern)}>
+                  {getPatternBadgeText(task.pattern)}
+                </Badge>
+                {task.distribution === "swarm" && (
+                  <Badge variant="secondary">Swarm</Badge>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Progress</p>
@@ -222,6 +229,15 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
                 View PR #{task.pr_url.split("/").pop()}
                 <ExternalLink className="h-3 w-3" />
               </a>
+            </div>
+          )}
+
+          {task.pattern_config && Object.keys(task.pattern_config).length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Pattern Configuration</p>
+              <pre className="text-xs mt-1 text-muted-foreground overflow-x-auto bg-muted p-2 rounded">
+                {JSON.stringify(task.pattern_config, null, 2)}
+              </pre>
             </div>
           )}
 
@@ -314,26 +330,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           ) : (
             <div className="space-y-2">
               {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 p-2 hover:bg-muted/50 rounded"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {event.type}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(event.created_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    {Object.keys(event.payload).length > 0 && (
-                      <pre className="text-xs mt-1 text-muted-foreground overflow-x-auto">
-                        {JSON.stringify(event.payload, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                </div>
+                <PatternEventRenderer key={event.id} event={event} />
               ))}
             </div>
           )}

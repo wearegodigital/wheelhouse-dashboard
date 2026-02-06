@@ -19,7 +19,7 @@ import {
   PlayCircle,
   ShieldCheck,
 } from "lucide-react"
-import { getStatusBadgeVariant } from "@/lib/status"
+import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant } from "@/lib/status"
 
 interface TaskListProps {
   filters?: TaskFilters
@@ -44,21 +44,6 @@ function getStatusIcon(status: string) {
       return <Circle className="h-4 w-4" />
     default:
       return <Circle className="h-4 w-4" />
-  }
-}
-
-function getModeBadgeText(mode: string) {
-  switch (mode) {
-    case "sequential":
-      return "Sequential"
-    case "parallel":
-      return "Parallel"
-    case "swarm":
-      return "Swarm"
-    case "competitive":
-      return "Competitive"
-    default:
-      return mode
   }
 }
 
@@ -104,12 +89,17 @@ export function TaskList({ filters, className }: TaskListProps) {
             <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   {getStatusIcon(task.status)}
                   <Badge variant={getStatusBadgeVariant(task.status)}>
                     {task.status}
                   </Badge>
-                  <Badge variant="outline">{getModeBadgeText(task.mode)}</Badge>
+                  <Badge variant={getPatternBadgeVariant(task.pattern)}>
+                    {getPatternBadgeText(task.pattern)}
+                  </Badge>
+                  {task.distribution === "swarm" && (
+                    <Badge variant="secondary">Swarm</Badge>
+                  )}
                   {task.agent_count > 0 && (
                     <span className="text-xs text-muted-foreground">
                       {task.agent_count} agent{task.agent_count !== 1 ? "s" : ""}

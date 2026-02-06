@@ -29,6 +29,35 @@ export type TaskStatus =
 
 export type ExecutionMode = "sequential" | "parallel" | "swarm" | "competitive"
 
+export type ExecutionPattern = "sequential" | "tournament" | "cascade" | "ensemble"
+export type DistributionMode = "single" | "swarm"
+export type ModelTier = "haiku" | "sonnet" | "opus"
+
+export interface TournamentConfig {
+  num_agents?: number
+  selection_mode?: "quality" | "speed" | "cost"
+  timeout_per_agent?: number
+}
+
+export interface CascadeConfig {
+  tiers: Array<{
+    model_tier: ModelTier
+    max_attempts_per_tier?: number
+    escalation_threshold?: number
+  }>
+}
+
+export interface EnsembleConfig {
+  strategies: Array<{
+    name: string
+    model_tier?: ModelTier
+    weight?: number
+  }>
+  merging_strategy?: "vote" | "best" | "combine"
+}
+
+export type PatternConfig = TournamentConfig | CascadeConfig | EnsembleConfig | Record<string, unknown>
+
 export type AgentType =
   | "orchestrator"
   | "maker"
@@ -167,8 +196,36 @@ export interface Database {
           updated_at: string
           started_at: string | null
           completed_at: string | null
+          pattern: ExecutionPattern | null
+          distribution: DistributionMode
+          pattern_config: PatternConfig
+          model_tier: string | null
         }
-        Insert: Omit<Database["public"]["Tables"]["tasks"]["Row"], "id" | "created_at" | "updated_at">
+        Insert: {
+          team_id?: string | null
+          created_by?: string | null
+          project_id?: string | null
+          sprint_id?: string | null
+          order_index?: number
+          repo_url: string
+          branch?: string | null
+          description: string
+          mode?: ExecutionMode
+          agent_count?: number
+          status?: TaskStatus
+          progress?: number
+          pr_url?: string | null
+          pr_number?: number | null
+          error?: string | null
+          metadata?: Record<string, unknown>
+          started_at?: string | null
+          completed_at?: string | null
+          source_id?: string | null
+          pattern?: ExecutionPattern | null
+          distribution?: DistributionMode
+          pattern_config?: PatternConfig
+          model_tier?: string | null
+        }
         Update: Partial<Omit<Database["public"]["Tables"]["tasks"]["Row"], "id">>
       }
       agents: {
@@ -336,6 +393,9 @@ export interface Database {
           sprint_name: string | null
           agent_count: number
           event_count: number
+          pattern: ExecutionPattern | null
+          distribution: DistributionMode
+          pattern_config: PatternConfig
         }
       }
     }

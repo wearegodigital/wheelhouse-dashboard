@@ -1,14 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Play, Pause, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PatternSelector } from "./PatternSelector";
+import type { ExecutionPattern, DistributionMode } from "@/types";
 
 interface ExecutionControlsProps {
   level: "project" | "sprint" | "task";
   id: string;
   status: string;
   onStatusChange?: () => void;
+  showPatternSelector?: boolean;
 }
 
 type ExecutionAction = "run" | "pause" | "cancel";
@@ -18,15 +22,22 @@ export function ExecutionControls({
   id,
   status,
   onStatusChange,
+  showPatternSelector = false,
 }: ExecutionControlsProps) {
+  const [pattern, setPattern] = useState<ExecutionPattern | null>(null);
+  const [distribution, setDistribution] = useState<DistributionMode>("single");
+
   const executionMutation = useMutation({
     mutationFn: async (action: ExecutionAction) => {
+      const body: Record<string, unknown> = { level, id, action };
+      if (pattern) body.pattern = pattern;
+      if (distribution) body.distribution = distribution;
       const response = await fetch("/api/execute", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ level, id, action }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -52,6 +63,15 @@ export function ExecutionControls({
 
   return (
     <div className="flex gap-2">
+      {showPatternSelector && (
+        <PatternSelector
+          pattern={pattern}
+          distribution={distribution}
+          onPatternChange={setPattern}
+          onDistributionChange={setDistribution}
+        />
+      )}
+
       {showRun && (
         <Button
           onClick={handleRun}
