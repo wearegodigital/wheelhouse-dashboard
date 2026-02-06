@@ -59,9 +59,10 @@ export function RecommendationsDisplay({
                     key={taskIdx}
                     className="text-xs pl-3 border-l-2 border-primary/30 py-1"
                   >
-                    <div>{task.description}</div>
+                    <div className="font-medium">{task.title}</div>
+                    {task.description && <div className="opacity-80">{task.description}</div>}
                     <div className="opacity-60 mt-0.5">
-                      Complexity: {task.estimatedComplexity}
+                      Complexity: {task.complexity ?? "medium"}
                     </div>
                   </div>
                 ))}
@@ -75,8 +76,9 @@ export function RecommendationsDisplay({
         <div className="space-y-2">
           {recommendations.tasks.map((task, idx) => (
             <div key={idx} className="bg-background/50 rounded p-2 text-xs">
-              <div>{task.description}</div>
-              <div className="opacity-60 mt-1">Complexity: {task.estimatedComplexity}</div>
+              <div className="font-medium">{task.title}</div>
+              {task.description && <div className="opacity-80">{task.description}</div>}
+              <div className="opacity-60 mt-1">Complexity: {task.complexity ?? "medium"}</div>
             </div>
           ))}
         </div>

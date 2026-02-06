@@ -27,9 +27,9 @@ function isSimpleRecommendation(rec: DecompositionRecommendation | null): boolea
   const totalSprints = rec.sprints?.length ?? 0
 
   // Check for high complexity tasks
-  const hasHighComplexityStandalone = rec.tasks?.some(t => t.estimatedComplexity === 'high') ?? false
+  const hasHighComplexityStandalone = rec.tasks?.some(t => t.complexity === 'large') ?? false
   const hasHighComplexitySprint = rec.sprints?.some(s =>
-    s.tasks?.some(t => t.estimatedComplexity === 'high')
+    s.tasks?.some(t => t.complexity === 'large')
   ) ?? false
   const hasHighComplexity = hasHighComplexityStandalone || hasHighComplexitySprint
 

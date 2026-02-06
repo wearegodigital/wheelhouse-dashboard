@@ -12,15 +12,18 @@ export interface DecompositionRecommendation {
 
 export interface SprintRecommendation {
   name: string
-  description: string
-  tasks: TaskRecommendation[]
+  description?: string
+  tasks?: TaskRecommendation[]
 }
 
 export interface TaskRecommendation {
+  title: string
   description: string
-  estimatedComplexity: "low" | "medium" | "high"
-  successCriteria?: string[]
-  suggestedFiles?: string[]
+  complexity?: "small" | "medium" | "large"
+  execution_pattern?: ExecutionPattern
+  distribution_mode?: DistributionMode
+  pattern_config?: Record<string, unknown>
+  estimated_minutes?: number
 }
 
 export interface ChatMessage {
@@ -39,8 +42,7 @@ export interface ExecutionRequest {
   pattern?: ExecutionPattern
   distribution?: DistributionMode
   workers?: number
-  patternConfig?: PatternConfig
-  modelTier?: ModelTier
+  patternConfig?: Record<string, unknown>
 }
 
 export interface ExecutionStatus {

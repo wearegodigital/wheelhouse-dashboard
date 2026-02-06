@@ -14,51 +14,56 @@ const PATTERN_EVENT_RENDERERS: Record<string, {
 }> = {
   "tournament.started": {
     icon: <Trophy className="h-4 w-4 text-yellow-500" />,
-    format: (p) => `Tournament started with ${p.num_agents ?? "?"} agents (${p.selection_mode ?? "best_of"})`,
+    format: (p) => `Tournament started with ${Array.isArray(p.agent_ids) ? p.agent_ids.length : "?"} agents`,
   },
   "tournament.solution_submitted": {
     icon: <Trophy className="h-4 w-4 text-blue-500" />,
-    format: (p) => `Agent ${p.agent_id ?? "?"} submitted solution (score: ${p.score ?? "?"})`,
+    format: (p) => `Agent ${p.agent_id ?? "?"} submitted solution: ${p.solution_summary ?? ""}`,
   },
   "tournament.winner_selected": {
     icon: <Trophy className="h-4 w-4 text-yellow-500" />,
-    format: (p) => `Winner: Agent ${p.winner_agent_id ?? "?"} (score: ${p.score ?? "?"})`,
+    format: (p) => {
+      const scores = p.scores as Record<string, number> | undefined
+      const winnerId = p.winner_agent_id as string | undefined
+      const score = scores && winnerId ? scores[winnerId] : "?"
+      return `Winner: Agent ${winnerId ?? "?"} (score: ${score})`
+    },
   },
-  "tournament.completed": {
-    icon: <Trophy className="h-4 w-4 text-green-500" />,
-    format: (p) => `Tournament complete — ${p.total_solutions ?? "?"} solutions evaluated`,
+  "tournament.failed": {
+    icon: <Trophy className="h-4 w-4 text-red-500" />,
+    format: (p) => `Tournament failed: ${p.reason ?? "no valid solutions"}`,
   },
   "cascade.started": {
     icon: <ArrowUp className="h-4 w-4 text-blue-500" />,
     format: (p) => `Cascade started with tiers: ${Array.isArray(p.tiers) ? p.tiers.join(" → ") : "?"}`,
   },
-  "cascade.tier_attempted": {
+  "cascade.tier_attempt": {
     icon: <ArrowUp className="h-4 w-4 text-orange-500" />,
-    format: (p) => `Trying tier: ${p.tier ?? "?"} (attempt ${p.attempt ?? "?"})`,
+    format: (p) => `Trying tier: ${p.tier ?? "?"} (attempt ${p.attempt_number ?? "?"})`,
   },
-  "cascade.tier_failed": {
+  "cascade.tier_result": {
+    icon: <ArrowUp className="h-4 w-4" />,
+    format: (p) => p.success ? `Tier ${p.tier ?? "?"} succeeded` : `Tier ${p.tier ?? "?"} failed: ${p.reason ?? ""}`,
+  },
+  "cascade.escalated": {
     icon: <ArrowUp className="h-4 w-4 text-red-500" />,
-    format: (p) => `Tier ${p.tier ?? "?"} failed — escalating`,
-  },
-  "cascade.tier_succeeded": {
-    icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-    format: (p) => `Resolved at tier: ${p.tier ?? "?"}`,
-  },
-  "cascade.completed": {
-    icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-    format: (p) => `Cascade complete — resolved at ${p.successful_tier ?? "?"} (${p.tiers_attempted ?? "?"} tiers tried)`,
+    format: (p) => `Escalating: ${p.from_tier ?? "?"} → ${p.to_tier ?? "?"}`,
   },
   "ensemble.started": {
     icon: <Users className="h-4 w-4 text-blue-500" />,
-    format: (p) => `Ensemble started with ${p.num_subtasks ?? "?"} subtasks`,
+    format: (p) => `Ensemble started with ${Array.isArray(p.subtask_ids) ? p.subtask_ids.length : "?"} subtasks (${p.decomposition_strategy ?? "?"})`,
   },
-  "ensemble.completed": {
+  "ensemble.subtask_complete": {
+    icon: <Users className="h-4 w-4" />,
+    format: (p) => `Subtask ${p.subtask_id ?? "?"} ${p.success ? "completed" : "failed"}`,
+  },
+  "ensemble.merged": {
     icon: <GitMerge className="h-4 w-4 text-green-500" />,
-    format: (p) => `Ensemble complete — ${p.subtasks_merged ?? "?"} subtasks merged`,
+    format: (p) => `Ensemble merged — ${p.subtasks_merged ?? "?"} subtasks${p.conflicts_resolved ? `, ${p.conflicts_resolved} conflicts resolved` : ""}`,
   },
-  "pattern.selected": {
+  "execution.pattern_selected": {
     icon: <Activity className="h-4 w-4 text-purple-500" />,
-    format: (p) => `Pattern selected: ${p.pattern ?? "?"} (${p.distribution ?? "single"}) — confidence: ${p.confidence ?? "?"}`,
+    format: (p) => `Pattern selected: ${p.execution_pattern ?? "?"} (${p.distribution_mode ?? "single"}) — confidence: ${p.confidence ?? "?"}`,
   },
 }
 

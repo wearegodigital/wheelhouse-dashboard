@@ -34,26 +34,23 @@ export type DistributionMode = "single" | "swarm"
 export type ModelTier = "haiku" | "sonnet" | "opus"
 
 export interface TournamentConfig {
-  num_agents?: number
-  selection_mode?: "quality" | "speed" | "cost"
+  agent_count?: number
   timeout_per_agent?: number
+  selection_criteria?: string[]
+  require_all_complete?: boolean
+  first_wins?: boolean
 }
 
 export interface CascadeConfig {
-  tiers: Array<{
-    model_tier: ModelTier
-    max_attempts_per_tier?: number
-    escalation_threshold?: number
-  }>
+  tiers?: ModelTier[]
+  success_criteria?: "tests_pass" | "builds" | "criteria_met"
+  max_escalations?: number
 }
 
 export interface EnsembleConfig {
-  strategies: Array<{
-    name: string
-    model_tier?: ModelTier
-    weight?: number
-  }>
-  merging_strategy?: "vote" | "best" | "combine"
+  decomposition_strategy?: "file_based" | "functional" | "layer_based"
+  max_subtasks?: number
+  merge_strategy?: "sequential" | "parallel" | "conflict_resolution"
 }
 
 export type PatternConfig = TournamentConfig | CascadeConfig | EnsembleConfig | Record<string, unknown>
@@ -183,6 +180,7 @@ export interface Database {
           order_index: number
           repo_url: string
           branch: string | null
+          title: string
           description: string
           mode: ExecutionMode
           agent_count: number
@@ -209,6 +207,7 @@ export interface Database {
           order_index?: number
           repo_url: string
           branch?: string | null
+          title?: string
           description: string
           mode?: ExecutionMode
           agent_count?: number
@@ -380,6 +379,7 @@ export interface Database {
           order_index: number
           repo_url: string
           branch: string | null
+          title: string
           description: string
           mode: ExecutionMode
           status: TaskStatus
