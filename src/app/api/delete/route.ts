@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
 export async function DELETE(request: NextRequest) {
-  if (!MODAL_API_URL) {
-    console.error("MODAL_API_URL environment variable is not configured")
-    return NextResponse.json(
-      { success: false, message: "Server configuration error" },
-      { status: 500 }
-    )
-  }
-
   const { searchParams } = new URL(request.url)
   const entityType = searchParams.get("type") // projects, sprints, tasks
   const entityId = searchParams.get("id")
@@ -30,48 +23,101 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
+  // Try Modal API first (for projects created through Modal/JSONL pipeline)
+  if (MODAL_API_URL) {
+    try {
+      const params = new URLSearchParams()
+      if (cascade) params.append("cascade", "true")
+      const query = params.toString()
+
+      const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}${query ? `?${query}` : ""}`
+      console.log(`Calling Modal API: DELETE ${modalUrl}`)
+
+      const response = await fetch(modalUrl, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      const contentType = response.headers.get("content-type")
+      if (contentType?.includes("application/json")) {
+        const data = await response.json()
+        if (response.ok) {
+          return NextResponse.json(data)
+        }
+        // If not 404, return the Modal error as-is
+        if (response.status !== 404) {
+          return NextResponse.json(
+            { success: false, message: data.message || `Modal API error: ${response.status}`, error: data.error },
+            { status: response.status }
+          )
+        }
+        // 404 = not in JSONL, fall through to Supabase direct delete
+        console.log("Modal API returned 404, falling back to Supabase direct delete")
+      } else {
+        const text = await response.text()
+        console.error(`Modal API returned non-JSON (${response.status}):`, text.slice(0, 200))
+        // Non-404 non-JSON errors are infrastructure issues
+        if (response.status !== 404) {
+          return NextResponse.json(
+            { success: false, message: `Modal API unavailable (status: ${response.status})` },
+            { status: 502 }
+          )
+        }
+      }
+    } catch (error) {
+      console.error("Modal API call failed, falling back to Supabase:", error)
+      // Network error — fall through to Supabase
+    }
+  }
+
+  // Fallback: delete directly from Supabase
+  // Handles projects created via dashboard UI (direct Supabase insert, no JSONL events)
   try {
-    const params = new URLSearchParams()
-    if (cascade) params.append("cascade", "true")
-    const query = params.toString()
+    const supabase = await createClient()
 
-    const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}${query ? `?${query}` : ""}`
-    console.log(`Calling Modal API: DELETE ${modalUrl}`)
+    if (cascade && entityType === "projects") {
+      // Get sprint IDs for this project
+      const { data: sprints } = await supabase
+        .from("sprints")
+        .select("id")
+        .eq("project_id", entityId)
 
-    const response = await fetch(modalUrl, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      if (sprints && sprints.length > 0) {
+        const sprintIds = sprints.map((s) => s.id)
+        // Delete tasks in those sprints
+        await supabase.from("tasks").delete().in("sprint_id", sprintIds)
+        // Delete the sprints
+        await supabase.from("sprints").delete().eq("project_id", entityId)
+      }
+
+      // Also delete tasks directly linked to project (no sprint)
+      await supabase.from("tasks").delete().eq("project_id", entityId)
+
+      // Delete planning conversations for this project
+      await supabase.from("planning_conversations").delete().eq("project_id", entityId)
+    }
+
+    if (cascade && entityType === "sprints") {
+      await supabase.from("tasks").delete().eq("sprint_id", entityId)
+    }
+
+    const { error } = await supabase.from(entityType).delete().eq("id", entityId)
+
+    if (error) {
+      console.error("Supabase delete error:", error)
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${entityType.slice(0, -1)} deleted`,
+      deleted_at: new Date().toISOString(),
     })
-
-    // Check if response is JSON
-    const contentType = response.headers.get("content-type")
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text()
-      console.error(`Modal API returned non-JSON response (${response.status}):`, text.slice(0, 200))
-      return NextResponse.json(
-        {
-          success: false,
-          message: `Modal API unavailable or returned invalid response (status: ${response.status}). Check MODAL_API_URL configuration.`,
-          debug: { url: modalUrl, status: response.status }
-        },
-        { status: 502 }
-      )
-    }
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { success: false, message: data.message || `Modal API error: ${response.status}`, error: data.error },
-        { status: response.status }
-      )
-    }
-
-    return NextResponse.json(data)
   } catch (error) {
-    console.error("Delete API error:", error)
+    console.error("Supabase fallback delete error:", error)
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
