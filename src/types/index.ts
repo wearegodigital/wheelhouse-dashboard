@@ -1,29 +1,25 @@
 // Re-export database types
 export * from "@/lib/supabase/types"
 
-// Import specific types for use in this file
-import type { ExecutionPattern, DistributionMode, PatternConfig, ModelTier } from "@/lib/supabase/types"
+// Re-export contract types used by components
+export type {
+  TaskRecommendation,
+  SprintRecommendation,
+  ProjectRecommendation,
+  ExecutionConfig,
+  SwarmConfig,
+  ActionTaken,
+  PlanningSessionSummary,
+} from "@/contract/wheelhouse-contract"
 
-// Planning Chat types
+// Import specific types for use in this file
+import type { ExecutionPattern, DistributionMode } from "@/lib/supabase/types"
+import type { SprintRecommendation, TaskRecommendation } from "@/contract/wheelhouse-contract"
+
+// Planning Chat types (UI wrapper — not in contract)
 export interface DecompositionRecommendation {
   sprints?: SprintRecommendation[]
   tasks?: TaskRecommendation[]
-}
-
-export interface SprintRecommendation {
-  name: string
-  description?: string
-  tasks?: TaskRecommendation[]
-}
-
-export interface TaskRecommendation {
-  title: string
-  description: string
-  complexity?: "small" | "medium" | "large"
-  execution_pattern?: ExecutionPattern
-  distribution_mode?: DistributionMode
-  pattern_config?: Record<string, unknown>
-  estimated_minutes?: number
 }
 
 export interface ChatMessage {

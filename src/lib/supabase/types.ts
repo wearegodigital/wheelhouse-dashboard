@@ -1,6 +1,26 @@
 // Database types - will be generated from Supabase schema
 // Run: pnpm supabase:gen to regenerate
 
+// Shared contract types — single source of truth from backend
+export type {
+  ExecutionPattern,
+  DistributionMode,
+  ModelTier,
+  TournamentConfig,
+  CascadeConfig,
+  EnsembleConfig,
+} from "@/contract/wheelhouse-contract"
+
+// Local import for use within this file's Database interface
+import type {
+  ExecutionPattern,
+  DistributionMode,
+  TournamentConfig,
+  CascadeConfig,
+  EnsembleConfig,
+} from "@/contract/wheelhouse-contract"
+
+// Dashboard-specific status types (Supabase vocabulary, may differ from backend)
 export type ProjectStatus =
   | "draft"
   | "planning"
@@ -28,30 +48,6 @@ export type TaskStatus =
   | "cancelled"
 
 export type ExecutionMode = "sequential" | "parallel" | "swarm" | "competitive"
-
-export type ExecutionPattern = "sequential" | "tournament" | "cascade" | "ensemble"
-export type DistributionMode = "single" | "swarm"
-export type ModelTier = "haiku" | "sonnet" | "opus"
-
-export interface TournamentConfig {
-  agent_count?: number
-  timeout_per_agent?: number
-  selection_criteria?: string[]
-  require_all_complete?: boolean
-  first_wins?: boolean
-}
-
-export interface CascadeConfig {
-  tiers?: ModelTier[]
-  success_criteria?: "tests_pass" | "builds" | "criteria_met"
-  max_escalations?: number
-}
-
-export interface EnsembleConfig {
-  decomposition_strategy?: "file_based" | "functional" | "layer_based"
-  max_subtasks?: number
-  merge_strategy?: "sequential" | "parallel" | "conflict_resolution"
-}
 
 export type PatternConfig = TournamentConfig | CascadeConfig | EnsembleConfig | Record<string, unknown>
 
