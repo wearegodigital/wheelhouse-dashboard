@@ -54,7 +54,7 @@ export function RecommendationsDisplay({
               </div>
               <div className="text-xs opacity-80">{sprint.description}</div>
               <div className="space-y-1">
-                {sprint.tasks.map((task, taskIdx) => (
+                {sprint.tasks?.map((task, taskIdx) => (
                   <div
                     key={taskIdx}
                     className="text-xs pl-3 border-l-2 border-primary/30 py-1"
