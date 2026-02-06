@@ -4,26 +4,6 @@ const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
 type EntityType = "projects" | "sprints" | "tasks"
 
-interface UpdateProjectBody {
-  name?: string
-  description?: string
-  repo_url?: string
-}
-
-interface UpdateSprintBody {
-  name?: string
-  description?: string
-  order_index?: number
-}
-
-interface UpdateTaskBody {
-  title?: string
-  description?: string
-  repo_url?: string
-  sprint_id?: string
-  project_id?: string
-}
-
 export async function PUT(request: NextRequest) {
   if (!MODAL_API_URL) {
     console.error("MODAL_API_URL environment variable is not configured")
@@ -53,7 +33,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Build the payload based on entity type
-    let payload: Record<string, unknown> = {}
+    const payload: Record<string, unknown> = {}
 
     switch (entityType) {
       case "projects":
