@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/lib/supabase/client"
+import { createProject } from "@/lib/api/wheelhouse"
 
 interface ProjectFormData {
   name: string
@@ -53,26 +53,19 @@ export default function NewProjectPage() {
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: ProjectFormData) => {
-      const supabase = createClient()
-      // TODO: Generate proper types with `npx supabase gen types typescript`
-      const { data: project, error } = await supabase
-        .from("projects")
-        .insert({
-          name: data.name,
-          description: data.description || "",
-          repo_url: data.repo_url,
-          default_branch: data.default_branch,
-          status: "planning",
-          metadata: {},
-        } as never)
-        .select()
-        .single()
-
-      if (error) throw error
-      return project as { id: string }
+      const result = await createProject({
+        name: data.name,
+        description: data.description || "",
+        repo_url: data.repo_url,
+      })
+      if (!result.success) {
+        throw new Error(result.message || "Failed to create project")
+      }
+      // id is the Supabase UUID returned by the create route
+      return result as { success: boolean; id: string }
     },
-    onSuccess: (project) => {
-      router.push(`/projects/${project.id}`)
+    onSuccess: (result) => {
+      router.push(`/projects/${result.id}`)
     },
   })
 

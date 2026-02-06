@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
@@ -8,6 +9,7 @@ interface CreateProjectBody {
   name: string
   description?: string
   repo_url?: string
+  default_branch?: string
 }
 
 interface CreateSprintBody {
@@ -86,13 +88,11 @@ export async function POST(request: NextRequest) {
         break
     }
 
+    // Create in Modal (JSONL event sourcing)
     const modalUrl = `${MODAL_API_URL}/${entityType}`
-
     const response = await fetch(modalUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
 
@@ -105,7 +105,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(data)
+    // Insert into Supabase immediately (avoids waiting for sync worker)
+    // The sync worker will see the row exists (via source_id) and update if needed
+    const supabaseId = data.supabase_id
+    const sourceId = data.project_id || data.sprint_id || data.task_id
+
+    if (supabaseId && entityType === "projects") {
+      try {
+        const supabase = await createClient()
+        const projectPayload = payload as CreateProjectBody
+        await supabase.from("projects").upsert({
+          id: supabaseId,
+          source_id: sourceId,
+          name: projectPayload.name,
+          description: projectPayload.description || "",
+          repo_url: projectPayload.repo_url || "",
+          default_branch: body.default_branch || "main",
+          status: "planning" as const,
+          metadata: {},
+        }, { onConflict: "id" })
+      } catch (err) {
+        // Non-fatal: sync worker will catch up
+        console.error("Supabase immediate insert failed (sync will catch up):", err)
+      }
+    }
+
+    return NextResponse.json({
+      ...data,
+      // Return supabase_id so frontend can navigate to the project
+      id: supabaseId || sourceId,
+    })
   } catch (error) {
     console.error("Create API error:", error)
     return NextResponse.json(

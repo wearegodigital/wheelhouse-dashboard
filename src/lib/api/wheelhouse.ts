@@ -21,9 +21,11 @@ export interface DeleteResponse {
 export interface CreateResponse {
   success: boolean
   message: string
+  id?: string  // Supabase UUID for navigation
   project_id?: string
   sprint_id?: string
   task_id?: string
+  supabase_id?: string
   error?: string
 }
 
