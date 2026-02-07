@@ -42,6 +42,39 @@ export async function DELETE(request: NextRequest) {
       if (contentType?.includes("application/json")) {
         const data = await response.json()
         if (response.ok) {
+          // Modal succeeded (JSONL event written). Also clean up Supabase
+          // immediately so the dashboard reflects the deletion without
+          // waiting for the async sync worker.
+          try {
+            const supabase = await createClient()
+            if (cascade && entityType === "projects") {
+              const { data: sprints } = await supabase
+                .from("sprints")
+                .select("id")
+                .eq("project_id", entityId)
+              const sprintRows = sprints as { id: string }[] | null
+              if (sprintRows && sprintRows.length > 0) {
+                const sprintIds = sprintRows.map((s) => s.id)
+                await supabase.from("tasks").delete().in("sprint_id", sprintIds)
+                await supabase.from("sprints").delete().eq("project_id", entityId)
+              }
+              await supabase.from("tasks").delete().eq("project_id", entityId)
+              await supabase.from("planning_conversations").delete().eq("project_id", entityId)
+            }
+            if (cascade && entityType === "sprints") {
+              await supabase.from("tasks").delete().eq("sprint_id", entityId)
+            }
+            if (entityType === "projects") {
+              await supabase.from("projects").delete().eq("id", entityId)
+            } else if (entityType === "sprints") {
+              await supabase.from("sprints").delete().eq("id", entityId)
+            } else {
+              await supabase.from("tasks").delete().eq("id", entityId)
+            }
+          } catch (supabaseErr) {
+            // Non-fatal: JSONL is source of truth, sync worker will catch up
+            console.warn("Supabase cleanup after Modal delete failed:", supabaseErr)
+          }
           return NextResponse.json(data)
         }
         // If not 404, return the Modal error as-is
