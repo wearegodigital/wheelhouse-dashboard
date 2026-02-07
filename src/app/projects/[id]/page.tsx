@@ -24,7 +24,7 @@ async function getProject(id: string): Promise<ProjectSummary | null> {
     return null;
   }
 
-  return data;
+  return data as unknown as ProjectSummary;
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {

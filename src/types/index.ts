@@ -53,7 +53,7 @@ export interface ExecutionStatus {
 
 // Filter types
 export interface TaskFilters {
-  status?: string
+  status?: import("@/lib/supabase/types").TaskStatus
   projectId?: string
   sprintId?: string
   search?: string
@@ -64,7 +64,7 @@ export interface TaskFilters {
 }
 
 export interface ProjectFilters {
-  status?: string
+  status?: import("@/lib/supabase/types").ProjectStatus
   search?: string
 }
 

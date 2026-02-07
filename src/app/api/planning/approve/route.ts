@@ -5,8 +5,9 @@ import { verifyMultipleEntities } from '@/lib/sync-verification'
 /**
  * Planning Approval API Route
  *
- * Calls the new backend /planning/approve endpoint which handles all entity creation.
- * The dashboard no longer creates entities directly - backend owns that logic.
+ * Calls the backend /planning/approve endpoint which creates entities directly in Supabase.
+ * With Supabase-primary architecture, entities exist immediately after creation.
+ * Verification confirms the entities were created successfully.
  */
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
@@ -93,7 +94,9 @@ export async function POST(request: NextRequest) {
         .eq('id', supabaseConversationId)
     }
 
-    // 3. Verify entities synced to Supabase
+    // 3. Verify entities exist in Supabase
+    // With Supabase-primary, Modal writes directly to Supabase, so entities exist immediately.
+    // This verification is a simple existence check (no sync delay).
     let verificationResult
     if (supabaseUrl && supabaseServiceKey) {
       const entitiesToVerify: Array<{ type: 'projects' | 'sprints' | 'tasks', id: string }> = []
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
         )
 
         if (!verificationResult.verified) {
-          console.warn('Some entities failed to sync:', verificationResult.failures)
+          console.warn('Some entities not found in Supabase:', verificationResult.failures)
         }
       }
     }

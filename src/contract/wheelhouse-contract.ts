@@ -263,3 +263,31 @@ export interface PlanningSSEEvent {
   elapsed?: number;
 }
 
+/** Response shape for POST /projects. */
+export interface CreateProjectResponse {
+  success: boolean;
+  project_id: string;
+  message: string;
+}
+
+/** Response shape for POST /sprints. */
+export interface CreateSprintResponse {
+  success: boolean;
+  sprint_id: string;
+  message: string;
+}
+
+/** Response shape for POST /tasks. */
+export interface CreateTaskResponse {
+  success: boolean;
+  task_id: string;
+  message: string;
+}
+
+/** Response shape for DELETE endpoints. */
+export interface DeleteResponse {
+  success: boolean;
+  message: string;
+  cascade_deleted?: Record<string, number>;
+}
+

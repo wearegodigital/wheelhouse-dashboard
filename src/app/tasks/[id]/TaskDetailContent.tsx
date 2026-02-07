@@ -112,10 +112,8 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
 
   const handleDelete = async () => {
     try {
-      // Use source_id (Modal's original ID) for API call, fallback to id
       await deleteTask.mutateAsync({
         id: task.id,
-        sourceId: (task as { source_id?: string | null }).source_id,
       });
       router.push("/tasks");
     } catch (error) {

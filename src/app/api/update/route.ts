@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 
+/**
+ * Update API Route
+ *
+ * Proxies update requests to Modal API.
+ * Note: With Supabase-primary architecture, the dashboard hooks (useProjects, useSprints, useTasks)
+ * write directly to Supabase for most updates. This route is available for:
+ * - External integrations that need to trigger Modal workflows
+ * - Updates that require Modal business logic
+ * - Backward compatibility with existing clients
+ *
+ * If you're adding new update functionality from the dashboard, consider writing directly to Supabase
+ * in the React hooks instead of proxying through this route.
+ */
+
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
 type EntityType = "projects" | "sprints" | "tasks"

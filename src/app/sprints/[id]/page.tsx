@@ -24,7 +24,7 @@ async function getSprint(id: string): Promise<SprintSummary | null> {
     return null;
   }
 
-  return data;
+  return data as unknown as SprintSummary;
 }
 
 export default async function SprintPage({ params }: SprintPageProps) {

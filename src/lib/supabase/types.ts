@@ -29,6 +29,8 @@ export type ProjectStatus =
   | "paused"
   | "completed"
   | "cancelled"
+  | "failed"
+  | "deleted"
 
 export type SprintStatus =
   | "draft"
@@ -37,6 +39,8 @@ export type SprintStatus =
   | "paused"
   | "completed"
   | "cancelled"
+  | "failed"
+  | "deleted"
 
 export type TaskStatus =
   | "pending"
@@ -46,6 +50,7 @@ export type TaskStatus =
   | "completed"
   | "failed"
   | "cancelled"
+  | "deleted"
 
 export type ExecutionMode = "sequential" | "parallel" | "swarm" | "competitive"
 
@@ -74,6 +79,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["teams"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["teams"]["Row"], "id">>
+        Relationships: []
       }
       users: {
         Row: {
@@ -89,6 +95,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["users"]["Row"], "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["users"]["Row"], "id">>
+        Relationships: []
       }
       api_keys: {
         Row: {
@@ -104,6 +111,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["api_keys"]["Row"], "id" | "created_at">
         Update: Partial<Omit<Database["public"]["Tables"]["api_keys"]["Row"], "id" | "user_id">>
+        Relationships: []
       }
       projects: {
         Row: {
@@ -121,6 +129,8 @@ export interface Database {
           updated_at: string
           started_at: string | null
           completed_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
         }
         Insert: {
           team_id?: string | null
@@ -133,6 +143,8 @@ export interface Database {
           metadata: Record<string, unknown>
           started_at?: string | null
           completed_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
         }
         Update: {
           team_id?: string | null
@@ -143,9 +155,13 @@ export interface Database {
           default_branch?: string
           status?: ProjectStatus
           metadata?: Record<string, unknown>
+          updated_at?: string
           started_at?: string | null
           completed_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
         }
+        Relationships: []
       }
       sprints: {
         Row: {
@@ -161,9 +177,12 @@ export interface Database {
           updated_at: string
           started_at: string | null
           completed_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
         }
         Insert: Omit<Database["public"]["Tables"]["sprints"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["sprints"]["Row"], "id">>
+        Relationships: []
       }
       tasks: {
         Row: {
@@ -194,6 +213,8 @@ export interface Database {
           distribution: DistributionMode
           pattern_config: PatternConfig
           model_tier: string | null
+          deleted_at: string | null
+          deleted_by: string | null
         }
         Insert: {
           team_id?: string | null
@@ -220,8 +241,11 @@ export interface Database {
           distribution?: DistributionMode
           pattern_config?: PatternConfig
           model_tier?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
         }
         Update: Partial<Omit<Database["public"]["Tables"]["tasks"]["Row"], "id">>
+        Relationships: []
       }
       agents: {
         Row: {
@@ -242,6 +266,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["agents"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["agents"]["Row"], "id">>
+        Relationships: []
       }
       events: {
         Row: {
@@ -256,6 +281,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["events"]["Row"], "id" | "created_at">
         Update: never
+        Relationships: []
       }
       planning_conversations: {
         Row: {
@@ -270,6 +296,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["planning_conversations"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["planning_conversations"]["Row"], "id">>
+        Relationships: []
       }
       planning_messages: {
         Row: {
@@ -282,6 +309,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["planning_messages"]["Row"], "id" | "created_at">
         Update: never
+        Relationships: []
       }
       team_invites: {
         Row: {
@@ -298,6 +326,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["team_invites"]["Row"], "id" | "team_id" | "token">>
+        Relationships: []
       }
       task_comments: {
         Row: {
@@ -311,6 +340,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["task_comments"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Omit<Database["public"]["Tables"]["task_comments"]["Row"], "id" | "task_id" | "user_id">>
+        Relationships: []
       }
       activity_log: {
         Row: {
@@ -326,6 +356,7 @@ export interface Database {
         }
         Insert: Omit<Database["public"]["Tables"]["activity_log"]["Row"], "id" | "created_at">
         Update: never
+        Relationships: []
       }
     }
     Views: {
@@ -346,7 +377,10 @@ export interface Database {
           sprints_completed: number
           task_count: number
           tasks_completed: number
+          deleted_at: string | null
+          deleted_by: string | null
         }
+        Relationships: []
       }
       sprint_summary: {
         Row: {
@@ -365,6 +399,7 @@ export interface Database {
           tasks_completed: number
           tasks_running: number
         }
+        Relationships: []
       }
       task_summary: {
         Row: {
@@ -393,8 +428,10 @@ export interface Database {
           distribution: DistributionMode
           pattern_config: PatternConfig
         }
+        Relationships: []
       }
     }
+    Functions: Record<string, never>
   }
 }
 

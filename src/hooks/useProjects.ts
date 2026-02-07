@@ -87,10 +87,8 @@ export function useDeleteProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, sourceId }: { id: string; sourceId?: string | null }) => {
-      // Use source_id (Modal's original ID) for API call, fallback to id
-      const modalId = sourceId || id
-      const result = await deleteProjectApi(modalId, true)
+    mutationFn: async ({ id }: { id: string }) => {
+      const result = await deleteProjectApi(id, true)
       if (!result.success) {
         throw new Error(result.message || "Failed to delete project")
       }

@@ -8,20 +8,15 @@
 export interface DeleteResponse {
   success: boolean
   message: string
-  deleted?: {
-    projects?: number
-    sprints?: number
-    tasks?: number
-  }
+  cascade_deleted?: Record<string, number>
   deleted_at?: string
   error?: string
-  current_status?: string
 }
 
 export interface CreateResponse {
   success: boolean
   message: string
-  id?: string  // Supabase UUID for navigation
+  id: string  // Supabase UUID for navigation (primary identifier)
   project_id?: string
   sprint_id?: string
   task_id?: string

@@ -42,11 +42,9 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
 
   const handleDelete = async () => {
     try {
-      // Use source_id (Modal's original ID) for API call, fallback to id
       await deleteSprint.mutateAsync({
         id: sprint.id,
         projectId: sprint.project_id,
-        sourceId: (sprint as { source_id?: string | null }).source_id,
       });
       router.push(`/projects/${sprint.project_id}`);
     } catch (error) {

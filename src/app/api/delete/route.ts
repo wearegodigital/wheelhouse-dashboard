@@ -42,39 +42,8 @@ export async function DELETE(request: NextRequest) {
       if (contentType?.includes("application/json")) {
         const data = await response.json()
         if (response.ok) {
-          // Modal succeeded (JSONL event written). Also clean up Supabase
-          // immediately so the dashboard reflects the deletion without
-          // waiting for the async sync worker.
-          try {
-            const supabase = await createClient()
-            if (cascade && entityType === "projects") {
-              const { data: sprints } = await supabase
-                .from("sprints")
-                .select("id")
-                .eq("project_id", entityId)
-              const sprintRows = sprints as { id: string }[] | null
-              if (sprintRows && sprintRows.length > 0) {
-                const sprintIds = sprintRows.map((s) => s.id)
-                await supabase.from("tasks").delete().in("sprint_id", sprintIds)
-                await supabase.from("sprints").delete().eq("project_id", entityId)
-              }
-              await supabase.from("tasks").delete().eq("project_id", entityId)
-              await supabase.from("planning_conversations").delete().eq("project_id", entityId)
-            }
-            if (cascade && entityType === "sprints") {
-              await supabase.from("tasks").delete().eq("sprint_id", entityId)
-            }
-            if (entityType === "projects") {
-              await supabase.from("projects").delete().eq("id", entityId)
-            } else if (entityType === "sprints") {
-              await supabase.from("sprints").delete().eq("id", entityId)
-            } else {
-              await supabase.from("tasks").delete().eq("id", entityId)
-            }
-          } catch (supabaseErr) {
-            // Non-fatal: JSONL is source of truth, sync worker will catch up
-            console.warn("Supabase cleanup after Modal delete failed:", supabaseErr)
-          }
+          // Modal succeeded - it handles soft deletes in Supabase directly via WheelhouseDB
+          // No need for Supabase cleanup, Modal already did the soft delete
           return NextResponse.json(data)
         }
         // If not 404, return the Modal error as-is
@@ -103,10 +72,15 @@ export async function DELETE(request: NextRequest) {
     }
   }
 
-  // Fallback: delete directly from Supabase
+  // Fallback: soft delete directly in Supabase
   // Handles projects created via dashboard UI (direct Supabase insert, no JSONL events)
   try {
     const supabase = await createClient()
+    const now = new Date().toISOString()
+    // Use typed objects per table to satisfy Supabase typed client
+    const projectSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
+    const sprintSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
+    const taskSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
 
     if (cascade && entityType === "projects") {
       // Get sprint IDs for this project
@@ -118,38 +92,38 @@ export async function DELETE(request: NextRequest) {
       const sprintRows = sprints as { id: string }[] | null
       if (sprintRows && sprintRows.length > 0) {
         const sprintIds = sprintRows.map((s) => s.id)
-        // Delete tasks in those sprints
-        await supabase.from("tasks").delete().in("sprint_id", sprintIds)
-        // Delete the sprints
-        await supabase.from("sprints").delete().eq("project_id", entityId)
+        // Soft delete tasks in those sprints
+        await supabase.from("tasks").update(taskSoftDelete).in("sprint_id", sprintIds)
+        // Soft delete the sprints
+        await supabase.from("sprints").update(sprintSoftDelete).eq("project_id", entityId)
       }
 
-      // Also delete tasks directly linked to project (no sprint)
-      await supabase.from("tasks").delete().eq("project_id", entityId)
+      // Also soft delete tasks directly linked to project (no sprint)
+      await supabase.from("tasks").update(taskSoftDelete).eq("project_id", entityId)
 
-      // Delete planning conversations for this project
+      // Soft delete planning conversations for this project
       await supabase.from("planning_conversations").delete().eq("project_id", entityId)
     }
 
     if (cascade && entityType === "sprints") {
-      await supabase.from("tasks").delete().eq("sprint_id", entityId)
+      await supabase.from("tasks").update(taskSoftDelete).eq("sprint_id", entityId)
     }
 
-    // Delete the entity itself — use literal table names to satisfy typed client
+    // Soft delete the entity itself — use literal table names to satisfy typed client
     let deleteError: { message: string } | null = null
     if (entityType === "projects") {
-      const { error } = await supabase.from("projects").delete().eq("id", entityId)
+      const { error } = await supabase.from("projects").update(projectSoftDelete).eq("id", entityId)
       deleteError = error
     } else if (entityType === "sprints") {
-      const { error } = await supabase.from("sprints").delete().eq("id", entityId)
+      const { error } = await supabase.from("sprints").update(sprintSoftDelete).eq("id", entityId)
       deleteError = error
     } else {
-      const { error } = await supabase.from("tasks").delete().eq("id", entityId)
+      const { error } = await supabase.from("tasks").update(taskSoftDelete).eq("id", entityId)
       deleteError = error
     }
 
     if (deleteError) {
-      console.error("Supabase delete error:", deleteError)
+      console.error("Supabase soft delete error:", deleteError)
       return NextResponse.json(
         { success: false, message: deleteError.message },
         { status: 500 }
@@ -159,10 +133,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `${entityType.slice(0, -1)} deleted`,
-      deleted_at: new Date().toISOString(),
+      deleted_at: now,
     })
   } catch (error) {
-    console.error("Supabase fallback delete error:", error)
+    console.error("Supabase fallback soft delete error:", error)
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

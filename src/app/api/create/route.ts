@@ -105,38 +105,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Insert into Supabase immediately (avoids waiting for sync worker)
-    // The sync worker will see the row exists (via source_id) and update if needed
-    const supabaseId = data.supabase_id
-    const sourceId = data.project_id || data.sprint_id || data.task_id
-
-    if (supabaseId && entityType === "projects") {
-      try {
-        const supabase = await createClient()
-        const projectPayload = payload as CreateProjectBody
-        // Cast needed: id and source_id are not in the typed Insert shape
-        // (they're normally auto-generated), but we set them explicitly here
-        // so the row matches what the sync worker would create.
-        await supabase.from("projects").upsert({
-          id: supabaseId,
-          source_id: sourceId,
-          name: projectPayload.name,
-          description: projectPayload.description || "",
-          repo_url: projectPayload.repo_url || "",
-          default_branch: body.default_branch || "main",
-          status: "planning",
-          metadata: {},
-        } as never, { onConflict: "id" })
-      } catch (err) {
-        // Non-fatal: sync worker will catch up
-        console.error("Supabase immediate insert failed (sync will catch up):", err)
-      }
-    }
+    // Backend already wrote to Supabase, extract the UUID for navigation
+    const id = data.project_id || data.sprint_id || data.task_id
 
     return NextResponse.json({
       ...data,
-      // Return supabase_id so frontend can navigate to the project
-      id: supabaseId || sourceId,
+      id, // Supabase UUID for navigation
     })
   } catch (error) {
     console.error("Create API error:", error)
