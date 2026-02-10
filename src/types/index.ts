@@ -10,6 +10,9 @@ export type {
   SwarmConfig,
   ActionTaken,
   PlanningSessionSummary,
+  TaskStatusDetail,
+  SprintStatusDetail,
+  ExecutionStatusResponse,
 } from "@/contract/wheelhouse-contract"
 
 // Import specific types for use in this file

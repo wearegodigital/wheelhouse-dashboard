@@ -59,6 +59,9 @@ export async function PUT(request: NextRequest) {
         if (body.name !== undefined) payload.name = body.name
         if (body.description !== undefined) payload.description = body.description
         if (body.order_index !== undefined) payload.order_index = body.order_index
+        if (body.pattern !== undefined) payload.pattern = body.pattern
+        if (body.distribution !== undefined) payload.distribution = body.distribution
+        if (body.pattern_config !== undefined) payload.pattern_config = body.pattern_config
         break
       case "tasks":
         if (body.title !== undefined) payload.title = body.title
@@ -66,6 +69,9 @@ export async function PUT(request: NextRequest) {
         if (body.repo_url !== undefined) payload.repo_url = body.repo_url
         if (body.sprint_id !== undefined) payload.sprint_id = body.sprint_id
         if (body.project_id !== undefined) payload.project_id = body.project_id
+        if (body.pattern !== undefined) payload.pattern = body.pattern
+        if (body.distribution !== undefined) payload.distribution = body.distribution
+        if (body.pattern_config !== undefined) payload.pattern_config = body.pattern_config
         break
     }
 

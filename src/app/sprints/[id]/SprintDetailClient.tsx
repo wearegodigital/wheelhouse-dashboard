@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
+import { PatternSelector } from "@/components/execution/PatternSelector";
 import { TaskList } from "@/components/tasks/TaskList";
 import type { SprintSummary } from "@/lib/supabase/types";
 import { useDeleteSprint } from "@/hooks/useSprints";
-import { getStatusBadgeVariant } from "@/lib/status";
+import { useExecutionStatus } from "@/hooks/useExecutionStatus";
+import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant, getDistributionBadgeText, getDistributionBadgeVariant } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 interface SprintDetailClientProps {
@@ -39,6 +41,9 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteSprint = useDeleteSprint();
+
+  const isRunning = sprint.status === "running";
+  const { data: executionStatus } = useExecutionStatus(sprint.id, isRunning);
 
   const handleDelete = async () => {
     try {
@@ -79,6 +84,16 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
             <Badge variant={getStatusBadgeVariant(sprint.status)}>
               {sprint.status}
             </Badge>
+            {sprint.pattern && (
+              <Badge variant={getPatternBadgeVariant(sprint.pattern)}>
+                {getPatternBadgeText(sprint.pattern)}
+              </Badge>
+            )}
+            {sprint.distribution && sprint.distribution !== "single" && (
+              <Badge variant={getDistributionBadgeVariant(sprint.distribution)}>
+                {getDistributionBadgeText(sprint.distribution)}
+              </Badge>
+            )}
           </div>
           {sprint.description && (
             <p className="text-muted-foreground">{sprint.description}</p>
@@ -86,6 +101,15 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <PatternSelector
+            pattern={sprint.pattern ?? null}
+            distribution={sprint.distribution ?? "single"}
+            onPatternChange={() => {}}
+            onDistributionChange={() => {}}
+            entityType="sprints"
+            entityId={sprint.id}
+            onSaved={() => router.refresh()}
+          />
           <ExecutionControls
             level="sprint"
             id={sprint.id}
@@ -160,6 +184,87 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Execution Progress */}
+      {isRunning && executionStatus && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Execution Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Overall Progress</span>
+                <span>{executionStatus.progress ?? 0}%</span>
+              </div>
+              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${executionStatus.progress ?? 0}%` }}
+                />
+              </div>
+            </div>
+            {executionStatus.total_tasks != null && (
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>
+                  {executionStatus.completed_tasks ?? 0} /{" "}
+                  {executionStatus.total_tasks} tasks complete
+                </span>
+                {(executionStatus.running_tasks ?? 0) > 0 && (
+                  <span>{executionStatus.running_tasks} running</span>
+                )}
+              </div>
+            )}
+            {executionStatus.tasks && executionStatus.tasks.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Tasks</h4>
+                {executionStatus.tasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between text-sm py-1"
+                  >
+                    <span className="truncate flex-1">{task.title}</span>
+                    <div className="flex items-center gap-2 ml-2">
+                      {task.progress != null && task.progress > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {task.progress}%
+                        </span>
+                      )}
+                      <Badge
+                        variant={
+                          task.status === "complete"
+                            ? "default"
+                            : task.error
+                              ? "destructive"
+                              : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {task.status}
+                      </Badge>
+                      {task.pr_url && (
+                        <a
+                          href={task.pr_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          PR
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {executionStatus.error && (
+              <div className="text-sm text-destructive bg-destructive/10 rounded p-2">
+                {executionStatus.error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sprint Timeline */}
       {(sprint.created_at || sprint.completed_at) && (

@@ -172,6 +172,9 @@ export interface Database {
           description: string | null
           order_index: number
           status: SprintStatus
+          pattern: ExecutionPattern | null
+          distribution: DistributionMode
+          pattern_config: PatternConfig
           metadata: Record<string, unknown>
           created_at: string
           updated_at: string
@@ -180,7 +183,22 @@ export interface Database {
           deleted_at: string | null
           deleted_by: string | null
         }
-        Insert: Omit<Database["public"]["Tables"]["sprints"]["Row"], "id" | "created_at" | "updated_at">
+        Insert: {
+          project_id: string
+          name: string
+          description?: string | null
+          order_index?: number
+          status?: SprintStatus
+          metadata?: Record<string, unknown>
+          started_at?: string | null
+          completed_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          source_id?: string | null
+          pattern?: ExecutionPattern | null
+          distribution?: DistributionMode
+          pattern_config?: PatternConfig
+        }
         Update: Partial<Omit<Database["public"]["Tables"]["sprints"]["Row"], "id">>
         Relationships: []
       }
@@ -398,6 +416,9 @@ export interface Database {
           task_count: number
           tasks_completed: number
           tasks_running: number
+          pattern: ExecutionPattern | null
+          distribution: DistributionMode
+          pattern_config: PatternConfig
         }
         Relationships: []
       }

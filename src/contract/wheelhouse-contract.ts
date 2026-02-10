@@ -193,6 +193,11 @@ export interface SprintListItem {
   description: string;
   order_index: number;
   status: SprintStatus;
+  pattern?: ExecutionPattern;
+  distribution?: DistributionMode;
+  pattern_config?: Record<string, unknown>;
+  started_at?: string;
+  completed_at?: string;
   tasks?: TaskListItem[];
 }
 
@@ -223,6 +228,13 @@ export interface ExecuteResponse {
   success: boolean;
   message: string;
   execution_id?: string;
+  execution_ids?: string[];
+  status?: string;
+  pattern?: string;
+  distribution?: string;
+  started_at?: string;
+  current_sprint?: string;
+  tasks_started?: number;
 }
 
 /** Shape for POST /planning/chat request body. */
@@ -289,5 +301,51 @@ export interface DeleteResponse {
   success: boolean;
   message: string;
   cascade_deleted?: Record<string, number>;
+}
+
+// =============================================================================
+// Execution status types (manually maintained until generator includes them)
+// Source: wheelhouse/contract/api_shapes.py lines 211-253
+// =============================================================================
+
+/** Task summary within execution status response. */
+export interface TaskStatusDetail {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  progress?: number;
+  pattern?: string;
+  error?: string;
+  pr_url?: string;
+}
+
+/** Sprint summary within execution status response. */
+export interface SprintStatusDetail {
+  id: string;
+  name: string;
+  status: SprintStatus;
+  pattern?: string;
+}
+
+/** Shape for GET /execute/status/{entity_id} response. */
+export interface ExecutionStatusResponse {
+  success: boolean;
+  type: "task" | "sprint" | "project";
+  id: string;
+  status: string;
+  progress?: number;
+  pattern?: string;
+  distribution?: string;
+  error?: string;
+  started_at?: string;
+  completed_at?: string;
+  pr_url?: string;
+  pr_number?: number;
+  branch?: string;
+  total_tasks?: number;
+  completed_tasks?: number;
+  running_tasks?: number;
+  tasks?: TaskStatusDetail[];
+  sprints?: SprintStatusDetail[];
 }
 

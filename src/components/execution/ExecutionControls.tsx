@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Play, Pause, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PatternSelector } from "./PatternSelector";
+import { useToast } from "@/components/ui/toast";
 import type { ExecutionPattern, DistributionMode } from "@/types";
 
 interface ExecutionControlsProps {
@@ -26,6 +27,7 @@ export function ExecutionControls({
 }: ExecutionControlsProps) {
   const [pattern, setPattern] = useState<ExecutionPattern | null>(null);
   const [distribution, setDistribution] = useState<DistributionMode>("single");
+  const { addToast } = useToast();
 
   const executionMutation = useMutation({
     mutationFn: async (action: ExecutionAction) => {
@@ -45,10 +47,29 @@ export function ExecutionControls({
         throw new Error(error.message || "Execution failed");
       }
 
-      return response.json();
+      const data = await response.json();
+      return { action, data };
     },
-    onSuccess: () => {
+    onSuccess: ({ action, data }) => {
+      if (action === "run") {
+        if (data?.tasks_started) {
+          const patternInfo = data.pattern ? ` with ${data.pattern} pattern` : "";
+          addToast(
+            `Execution started — ${data.tasks_started} task${data.tasks_started === 1 ? "" : "s"} running${patternInfo}`,
+            "success"
+          );
+        } else {
+          addToast("Execution started", "success");
+        }
+      } else if (action === "pause") {
+        addToast("Execution paused", "info");
+      } else if (action === "cancel") {
+        addToast("Execution cancelled", "info");
+      }
       onStatusChange?.();
+    },
+    onError: (error: Error) => {
+      addToast(`Execution failed: ${error.message}`, "error");
     },
   });
 

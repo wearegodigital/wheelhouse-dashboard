@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,9 @@ interface PatternSelectorProps {
   distribution: DistributionMode;
   onPatternChange: (pattern: ExecutionPattern | null) => void;
   onDistributionChange: (distribution: DistributionMode) => void;
+  entityType?: "sprints" | "tasks";
+  entityId?: string;
+  onSaved?: () => void;
 }
 
 export function PatternSelector({
@@ -34,8 +38,32 @@ export function PatternSelector({
   distribution,
   onPatternChange,
   onDistributionChange,
+  entityType,
+  entityId,
+  onSaved,
 }: PatternSelectorProps) {
   const [open, setOpen] = useState(false);
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: { pattern: string | null; distribution: string }) => {
+      const response = await fetch('/api/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: entityType,
+          id: entityId,
+          pattern: data.pattern,
+          distribution: data.distribution,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save pattern');
+      return response.json();
+    },
+    onSuccess: () => {
+      onSaved?.();
+      setOpen(false);
+    },
+  });
 
   const handlePatternChange = (value: string) => {
     onPatternChange((value === "none" ? null : value) as ExecutionPattern | null);
@@ -130,6 +158,14 @@ export function PatternSelector({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Close
           </Button>
+          {entityType && entityId && (
+            <Button
+              onClick={() => saveMutation.mutate({ pattern, distribution })}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

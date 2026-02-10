@@ -5,7 +5,7 @@ import { Timer, CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ProgressBar } from "@/components/ui/progress-bar"
-import { getStatusBadgeVariant, pluralize } from "@/lib/status"
+import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant, pluralize } from "@/lib/status"
 import type { SprintSummary } from "@/lib/supabase/types"
 
 interface SprintCardProps {
@@ -32,9 +32,16 @@ export function SprintCard({ sprint }: SprintCardProps) {
                 </CardDescription>
               )}
             </div>
-            <Badge variant={getStatusBadgeVariant(sprint.status)} className="shrink-0">
-              {sprint.status}
-            </Badge>
+            <div className="flex gap-2 shrink-0">
+              <Badge variant={getStatusBadgeVariant(sprint.status)}>
+                {sprint.status}
+              </Badge>
+              {sprint.pattern && (
+                <Badge variant={getPatternBadgeVariant(sprint.pattern)} className="text-xs">
+                  {getPatternBadgeText(sprint.pattern)}
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

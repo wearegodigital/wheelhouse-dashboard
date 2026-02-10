@@ -11,6 +11,7 @@ import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { SprintList } from "@/components/sprints";
 import { PlanningChat } from "@/components/planning";
 import { useDeleteProject } from "@/hooks/useProjects";
+import { useExecutionStatus } from "@/hooks/useExecutionStatus";
 import { getStatusBadgeVariant } from "@/lib/status";
 import type { ProjectSummary } from "@/lib/supabase/types";
 
@@ -23,6 +24,9 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
   const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "planning">("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteProject = useDeleteProject();
+
+  const isRunning = initialProject.status === "running";
+  const { data: executionStatus } = useExecutionStatus(initialProject.id, isRunning);
 
   const handleStatusChange = () => {
     router.refresh();
@@ -113,9 +117,60 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
       {/* Tab Content */}
       {activeTab === "overview" && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Project Info */}
-          <Card>
+        <div className="space-y-6">
+          {/* Execution Progress */}
+          {isRunning && executionStatus && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Execution Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Overall Progress</span>
+                    <span>{executionStatus.progress ?? 0}%</span>
+                  </div>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${executionStatus.progress ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+                {executionStatus.total_tasks != null && (
+                  <div className="text-sm text-muted-foreground">
+                    {executionStatus.completed_tasks ?? 0} / {executionStatus.total_tasks} tasks complete
+                  </div>
+                )}
+                {executionStatus.sprints && executionStatus.sprints.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Sprints</h4>
+                    {executionStatus.sprints.map((sprint) => (
+                      <div key={sprint.id} className="flex items-center justify-between text-sm py-1">
+                        <span>{sprint.name}</span>
+                        <Badge
+                          variant={
+                            sprint.status === "completed"
+                              ? "default"
+                              : sprint.status === "running"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className="text-xs"
+                        >
+                          {sprint.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Project Info */}
+            <Card>
             <CardHeader>
               <CardTitle>Project Details</CardTitle>
               <CardDescription>Repository and metadata</CardDescription>
@@ -203,6 +258,7 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
 

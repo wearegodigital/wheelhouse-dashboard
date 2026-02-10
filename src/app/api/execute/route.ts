@@ -25,7 +25,13 @@ interface ExecutionResponse {
   success: boolean
   message?: string
   execution_id?: string
+  execution_ids?: string[]
   status?: string
+  pattern?: string
+  distribution?: string
+  started_at?: string
+  current_sprint?: string
+  tasks_started?: number
 }
 
 interface ErrorResponse {

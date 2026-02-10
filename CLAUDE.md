@@ -4,7 +4,7 @@ Web dashboard for Wheelhouse - agent orchestration for automated code implementa
 
 ## Quick Reference
 
-- **Stack**: Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
+- **Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **Data**: Supabase (Postgres + Realtime + Auth)
 - **State**: React Query + Supabase subscriptions
 - **Backend**: Modal (Wheelhouse agents) - separate repo
