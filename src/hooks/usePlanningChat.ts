@@ -149,50 +149,21 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
     }
   }, [currentRecommendation, isStreaming, isReadyForApproval])
 
-  // Create or get conversation
+  // Get existing conversation or create a temporary local ID.
+  // The real conversation is created server-side by the backend
+  // (Modal /planning/chat) which returns the conversation_id via SSE.
   const ensureConversation = useCallback(async (): Promise<string> => {
     if (conversationId) return conversationId
 
-    const { data, error } = await supabase
-      .from("planning_conversations")
-      .insert({
-        project_id: options.projectId || null,
-        sprint_id: options.sprintId || null,
-        status: "active",
-      } as never)
-      .select("id")
-      .single<{ id: string }>()
+    // Use a temporary local ID until the backend returns the real one
+    const tempId = crypto.randomUUID()
+    setConversationId(tempId)
+    setSession(createSession(tempId))
+    return tempId
+  }, [conversationId])
 
-    if (error) throw error
-    setConversationId(data.id)
-    setSession(createSession(data.id))
-    return data.id
-  }, [conversationId, options.projectId, options.sprintId, supabase])
-
-  // Save message to database
-  const saveMessage = useCallback(
-    async (
-      convId: string,
-      role: "user" | "orchestrator",
-      content: string,
-      recommendations?: DecompositionRecommendation
-    ): Promise<string> => {
-      const { data, error } = await supabase
-        .from("planning_messages")
-        .insert({
-          conversation_id: convId,
-          role,
-          content,
-          recommendations: recommendations || null,
-        } as never)
-        .select("id")
-        .single<{ id: string }>()
-
-      if (error) throw error
-      return data.id
-    },
-    [supabase]
-  )
+  // Messages are saved server-side by the backend (Modal /planning/chat).
+  // No direct Supabase writes needed from the dashboard.
 
   // Get history for context (last N messages)
   const getHistoryForContext = useCallback(() => {
@@ -219,10 +190,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       }
       setMessages((prev) => [...prev, userMessage])
       setIsStreaming(true)
-
-      // Save user message to DB
-      const savedUserId = await saveMessage(convId, "user", content)
-      userMessage.id = savedUserId
 
       // Create placeholder for assistant response
       const assistantMessage: ChatMessage = {
@@ -295,6 +262,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                 // Capture backend conversation_id from first SSE event
                 if (data.conversation_id) {
                   console.log('[Planning] Received backend conversation_id:', data.conversation_id)
+                  setConversationId(data.conversation_id as string)
                   setSession(prev => prev && !prev.backendConversationId ? setBackendConversationId(prev, data.conversation_id as string) : prev)
                 }
 
@@ -337,16 +305,9 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                   updateMessageById(assistantMessage.id, { recommendations })
                 }
 
-                if (data.done && !savedToDb) {
-                  // Save orchestrator message to DB
-                  const savedAssistantId = await saveMessage(
-                    convId,
-                    "orchestrator",
-                    fullContent,
-                    recommendations
-                  )
+                if (data.done) {
+                  // Backend has already saved the message to Supabase
                   savedToDb = true
-                  updateMessageById(assistantMessage.id, { id: savedAssistantId })
                 }
                 } catch {
                   // Skip invalid JSON
@@ -367,16 +328,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           }
         }
 
-        // If we didn't get a done signal, save anyway (but only if not already saved)
-        if (fullContent && !savedToDb) {
-          const savedAssistantId = await saveMessage(
-            convId,
-            "orchestrator",
-            fullContent,
-            recommendations
-          )
-          updateMessageById(assistantMessage.id, { id: savedAssistantId })
-        }
+        // Backend saves messages server-side, no local save needed
       } catch (error) {
         console.error("Error sending message:", error)
         // Remove the failed assistant message
@@ -387,7 +339,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
     },
     [
       ensureConversation,
-      saveMessage,
       getHistoryForContext,
       updateMessageById,
       options.projectId,
@@ -432,19 +383,12 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   }, [currentRecommendation, conversationId, options, session])
 
   const reset = useCallback(async () => {
-    // Mark current conversation as abandoned if exists
-    if (conversationId) {
-      await supabase
-        .from("planning_conversations")
-        .update({ status: "abandoned" } as never)
-        .eq("id", conversationId)
-    }
-
+    // TODO: call backend API to mark conversation as abandoned if needed
     setMessages([])
     setConversationId(null)
     setCurrentRecommendation(null)
     setIsReadyForApproval(false)
-  }, [conversationId, supabase])
+  }, [])
 
   return {
     messages,
