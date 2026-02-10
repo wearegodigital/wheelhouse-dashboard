@@ -18,6 +18,7 @@ interface ApproveRequest {
   projectId?: string
   sprintId?: string
   modifications?: Record<string, unknown>
+  recommendation?: Record<string, unknown>  // Fallback if DB save failed during streaming
 }
 
 interface ModalApproveResponse {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ApproveRequest = await request.json()
-    const { conversationId, supabaseConversationId, projectId, sprintId, modifications } = body
+    const { conversationId, supabaseConversationId, projectId, sprintId, modifications, recommendation } = body
 
     if (!conversationId) {
       return NextResponse.json(
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Call new backend /planning/approve endpoint
+    // Forward recommendation as fallback in case DB save failed during streaming
     const modalResponse = await fetch(`${MODAL_API_URL}/planning/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
         projectId,
         sprintId,
         modifications: modifications || {},
+        ...(recommendation ? { recommendation } : {}),
       }),
     })
 
