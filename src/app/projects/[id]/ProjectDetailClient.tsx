@@ -145,7 +145,7 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
                 {executionStatus.sprints && executionStatus.sprints.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Sprints</h4>
-                    {executionStatus.sprints.map((sprint) => (
+                    {executionStatus.sprints.map((sprint: { id: string; name: string; status: string; pattern?: string }) => (
                       <div key={sprint.id} className="flex items-center justify-between text-sm py-1">
                         <span>{sprint.name}</span>
                         <Badge

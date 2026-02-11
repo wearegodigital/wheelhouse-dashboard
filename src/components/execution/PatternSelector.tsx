@@ -104,7 +104,6 @@ export function PatternSelector({
                 <SelectItem value="sequential">Sequential</SelectItem>
                 <SelectItem value="tournament">Tournament</SelectItem>
                 <SelectItem value="cascade">Cascade</SelectItem>
-                <SelectItem value="ensemble">Ensemble</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -136,12 +135,6 @@ export function PatternSelector({
                 <p>
                   <strong>Cascade:</strong> Try progressively more capable
                   models until success
-                </p>
-              )}
-              {pattern === "ensemble" && (
-                <p>
-                  <strong>Ensemble:</strong> Run multiple strategies in parallel
-                  and merge results
                 </p>
               )}
               {pattern === "sequential" && (

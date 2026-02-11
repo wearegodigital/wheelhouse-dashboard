@@ -49,18 +49,6 @@ const PATTERN_EVENT_RENDERERS: Record<string, {
     icon: <ArrowUp className="h-4 w-4 text-red-500" />,
     format: (p) => `Escalating: ${p.from_tier ?? "?"} → ${p.to_tier ?? "?"}`,
   },
-  "ensemble.started": {
-    icon: <Users className="h-4 w-4 text-blue-500" />,
-    format: (p) => `Ensemble started with ${Array.isArray(p.subtask_ids) ? p.subtask_ids.length : "?"} subtasks (${p.decomposition_strategy ?? "?"})`,
-  },
-  "ensemble.subtask_complete": {
-    icon: <Users className="h-4 w-4" />,
-    format: (p) => `Subtask ${p.subtask_id ?? "?"} ${p.success ? "completed" : "failed"}`,
-  },
-  "ensemble.merged": {
-    icon: <GitMerge className="h-4 w-4 text-green-500" />,
-    format: (p) => `Ensemble merged — ${p.subtasks_merged ?? "?"} subtasks${p.conflicts_resolved ? `, ${p.conflicts_resolved} conflicts resolved` : ""}`,
-  },
   "execution.pattern_selected": {
     icon: <Activity className="h-4 w-4 text-purple-500" />,
     format: (p) => `Pattern selected: ${p.execution_pattern ?? "?"} (${p.distribution_mode ?? "single"}) — confidence: ${p.confidence ?? "?"}`,

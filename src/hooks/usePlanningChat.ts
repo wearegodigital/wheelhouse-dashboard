@@ -280,7 +280,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                     return prev ? touchSession(prev) : prev
                   })
                   // Clear phase when complete
-                  if (data.phase === "complete") {
+                  if (data.phase === "completed") {
                     setTimeout(() => setCurrentPhase(null), 1000)
                   }
                 }

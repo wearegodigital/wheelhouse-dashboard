@@ -218,7 +218,7 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
             {executionStatus.tasks && executionStatus.tasks.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Tasks</h4>
-                {executionStatus.tasks.map((task) => (
+                {executionStatus.tasks.map((task: { id: string; title: string; status: string; progress?: number; error?: string; pr_url?: string }) => (
                   <div
                     key={task.id}
                     className="flex items-center justify-between text-sm py-1"
@@ -232,7 +232,7 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
                       )}
                       <Badge
                         variant={
-                          task.status === "complete"
+                          task.status === "completed"
                             ? "default"
                             : task.error
                               ? "destructive"

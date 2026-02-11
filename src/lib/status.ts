@@ -52,8 +52,6 @@ export function getPatternBadgeText(pattern: ExecutionPattern | null): string {
       return "Tournament"
     case "cascade":
       return "Cascade"
-    case "ensemble":
-      return "Ensemble"
     default:
       return pattern
   }
@@ -71,8 +69,6 @@ export function getPatternBadgeVariant(pattern: ExecutionPattern | null): BadgeV
       return "default"
     case "cascade":
       return "warning"
-    case "ensemble":
-      return "success"
     default:
       return "outline"
   }
@@ -118,8 +114,6 @@ export function getPatternIcon(pattern: ExecutionPattern | null): string {
       return "TrophyIcon"
     case "cascade":
       return "Rows2Icon"
-    case "ensemble":
-      return "Users2Icon"
     default:
       return "CircleIcon"
   }

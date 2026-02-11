@@ -2,7 +2,7 @@
 // DO NOT EDIT - regenerate with: python -m wheelhouse.contract.generate
 
 /** Task lifecycle status. */
-export type TaskStatus = "pending" | "assigned" | "in_progress" | "checking" | "complete" | "failed";
+export type TaskStatus = "pending" | "assigned" | "in_progress" | "checking" | "completed" | "failed";
 
 /** Project lifecycle status. */
 export type ProjectStatus = "draft" | "planning" | "ready" | "running" | "completed" | "failed" | "cancelled";
@@ -11,7 +11,7 @@ export type ProjectStatus = "draft" | "planning" | "ready" | "running" | "comple
 export type SprintStatus = "draft" | "ready" | "running" | "completed" | "failed" | "cancelled";
 
 /** Per-task execution strategy. */
-export type ExecutionPattern = "sequential" | "tournament" | "ensemble" | "cascade";
+export type ExecutionPattern = "sequential" | "tournament" | "cascade";
 
 /** Task distribution strategy. */
 export type DistributionMode = "single" | "swarm";
@@ -113,13 +113,6 @@ export interface TournamentConfig {
   first_wins?: boolean;
 }
 
-/** Configuration for ensemble pattern. */
-export interface EnsembleConfig {
-  decomposition_strategy?: "file_based" | "functional" | "layer_based";
-  max_subtasks?: number;
-  merge_strategy?: "sequential" | "parallel" | "conflict_resolution";
-}
-
 /** Configuration for cascade pattern. */
 export interface CascadeConfig {
   tiers?: ModelTier[];
@@ -132,7 +125,7 @@ export interface SwarmConfig {
   num_workers?: number;
   task_timeout?: number;
   per_task_pattern?: ExecutionPattern;
-  per_task_config?: TournamentConfig | EnsembleConfig | CascadeConfig;
+  per_task_config?: TournamentConfig | CascadeConfig;
 }
 
 /** Unified execution configuration. */
@@ -140,7 +133,6 @@ export interface ExecutionConfig {
   distribution_mode?: DistributionMode;
   execution_pattern?: ExecutionPattern;
   tournament_config?: TournamentConfig;
-  ensemble_config?: EnsembleConfig;
   cascade_config?: CascadeConfig;
   swarm_config?: SwarmConfig;
   forced?: boolean;
@@ -306,6 +298,7 @@ export interface DeleteResponse {
 // =============================================================================
 // Execution status types (manually maintained until generator includes them)
 // Source: wheelhouse/contract/api_shapes.py lines 211-253
+// NOTE: Re-add these after each contract sync until the generator is updated
 // =============================================================================
 
 /** Task summary within execution status response. */

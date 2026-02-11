@@ -8,7 +8,6 @@ export type {
   ModelTier,
   TournamentConfig,
   CascadeConfig,
-  EnsembleConfig,
 } from "@/contract/wheelhouse-contract"
 
 // Local import for use within this file's Database interface
@@ -17,7 +16,6 @@ import type {
   DistributionMode,
   TournamentConfig,
   CascadeConfig,
-  EnsembleConfig,
 } from "@/contract/wheelhouse-contract"
 
 // Dashboard-specific status types (Supabase vocabulary, may differ from backend)
@@ -54,7 +52,7 @@ export type TaskStatus =
 
 export type ExecutionMode = "sequential" | "parallel" | "swarm" | "competitive"
 
-export type PatternConfig = TournamentConfig | CascadeConfig | EnsembleConfig | Record<string, unknown>
+export type PatternConfig = TournamentConfig | CascadeConfig | Record<string, unknown>
 
 export type AgentType =
   | "orchestrator"

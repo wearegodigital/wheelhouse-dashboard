@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import type { ExecutionStatusResponse } from "@/contract/wheelhouse-contract"
 
-const TERMINAL_STATUSES = ["completed", "failed", "cancelled", "complete"]
+const TERMINAL_STATUSES = ["completed", "failed", "cancelled"]
 const POLL_INTERVAL_MS = 3000
 
 export function useExecutionStatus(entityId: string | null, enabled = false) {

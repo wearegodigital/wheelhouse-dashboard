@@ -44,7 +44,7 @@ interface ProgressIndicatorProps {
 export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) {
   const [dotCount, setDotCount] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
-  const isComplete = phase.phase === "complete"
+  const isComplete = phase.phase === "completed"
 
   // Track phase-specific start time - updates when phase changes
   const [phaseKey, setPhaseKey] = useState(phase.phase)
