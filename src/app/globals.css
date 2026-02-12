@@ -133,10 +133,19 @@ body {
   }
 }
 
-/* Cyberpunk animations */
+/* Accessibility: disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Cyberpunk animations use GPU-accelerated properties (transform, opacity) for better performance */
 @keyframes neon-glow {
-  0%, 100% { filter: drop-shadow(0 0 2px currentColor) drop-shadow(0 0 4px currentColor); }
-  50% { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor) drop-shadow(0 0 12px currentColor); }
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
 }
 
 @keyframes glitch {
@@ -154,12 +163,14 @@ body {
 .neon-text {
   text-shadow: 0 0 2px currentColor, 0 0 4px currentColor, 0 0 8px currentColor;
   animation: neon-glow 2s ease-in-out infinite;
+  will-change: opacity, transform;
 }
 
 .neon-border {
   border: 1px solid hsl(var(--primary));
   box-shadow: 0 0 4px hsl(var(--primary)), inset 0 0 4px hsl(var(--primary));
   animation: neon-glow 2s ease-in-out infinite;
+  will-change: opacity, transform;
 }
 
 .glitch-effect {
@@ -173,6 +184,7 @@ body {
   inset: 0;
   animation: glitch 0.3s infinite;
   opacity: 0.8;
+  will-change: transform;
 }
 
 .glitch-effect::before {
@@ -212,6 +224,7 @@ body {
   background: linear-gradient(to right, transparent, hsl(var(--primary) / 0.5), transparent);
   animation: scan-line 4s linear infinite;
   z-index: 11;
+  will-change: transform;
 }
 
 .cyber-card {
@@ -229,6 +242,7 @@ body {
   transition: transform 0.6s;
   pointer-events: none;
   z-index: 2;
+  will-change: transform;
 }
 
 .cyber-card:hover {
@@ -269,7 +283,7 @@ body {
   z-index: 1;
 }
 
-/* Additional animations for spinners and effects */
+/* Spinner and effect animations */
 @keyframes cyber-spin {
   to { transform: rotate(360deg); }
 }
@@ -279,8 +293,8 @@ body {
 }
 
 @keyframes cyber-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 8px hsl(var(--primary)), 0 0 16px hsl(var(--primary) / 0.5); }
-  50% { opacity: 0.6; box-shadow: 0 0 16px hsl(var(--primary)), 0 0 32px hsl(var(--primary) / 0.7), 0 0 48px hsl(var(--accent) / 0.3); }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
 }
 
 @keyframes cyber-glitch-spin {
@@ -300,11 +314,13 @@ body {
   border: 2px solid transparent;
   border-top-color: hsl(var(--primary));
   border-right-color: hsl(var(--primary) / 0.3);
+  will-change: transform;
 }
 
 .cyber-spinner-outer {
   animation: cyber-spin 2s linear infinite, cyber-pulse 2s ease-in-out infinite;
   border-width: 2px;
+  will-change: transform, opacity;
 }
 
 .cyber-spinner-middle {
@@ -329,6 +345,7 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%);
   animation: cyber-pulse 1.5s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .cyber-spinner-glitch {
@@ -337,6 +354,7 @@ body {
   border-radius: 50%;
   border: 2px solid hsl(var(--accent) / 0.5);
   animation: cyber-glitch-spin 3s linear infinite;
+  will-change: transform, opacity;
 }
 
 /* Cyberpunk heading effects */
@@ -354,7 +372,10 @@ body {
 .cyberpunk h4 { font-weight: 600; text-shadow: 0 0 4px hsl(var(--primary) / 0.2); color: hsl(var(--secondary-foreground)); }
 
 /* Glitch effect for headings (opt-in with class) */
-.cyberpunk .glitch-heading { animation: glitch 5s infinite; }
+.cyberpunk .glitch-heading {
+  animation: glitch 5s infinite;
+  will-change: transform;
+}
 .cyberpunk .glitch-heading::before,
 .cyberpunk .glitch-heading::after {
   content: attr(data-text);
@@ -362,6 +383,7 @@ body {
   inset: 0;
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 .cyberpunk .glitch-heading::before {
   color: hsl(var(--accent));
@@ -419,6 +441,7 @@ body {
   box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 16px hsl(var(--primary) / 0.3),
               0 0 24px hsl(var(--primary) / 0.15), inset 0 0 12px hsl(var(--primary) / 0.1);
   animation: neon-glow 2s ease-in-out infinite;
+  will-change: opacity, transform;
 }
 
 .cyberpunk input:disabled,
@@ -672,6 +695,7 @@ body {
 
 .cyberpunk :is(a, [role="link"]).glitch-link {
   animation: link-glitch 5s infinite;
+  will-change: transform;
 }
 
 @keyframes link-glitch {
