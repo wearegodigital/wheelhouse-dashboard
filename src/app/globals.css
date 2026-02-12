@@ -415,6 +415,40 @@ body {
    CYBERPUNK COMPONENT STYLING
    =========================================================================== */
 
+/* Page container corner accents - neon brackets */
+.cyberpunk .container::before,
+.cyberpunk .container::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  border: 2px solid hsl(var(--primary));
+  box-shadow: 0 0 4px hsl(var(--primary)), 0 0 8px hsl(var(--primary) / 0.5);
+}
+
+.cyberpunk .container::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.cyberpunk .container::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+.cyberpunk .container:hover::before,
+.cyberpunk .container:hover::after {
+  opacity: 1;
+}
+
 /* Headings with neon glow */
 .cyberpunk h1, .cyberpunk h2, .cyberpunk h3, .cyberpunk h4 {
   position: relative;
