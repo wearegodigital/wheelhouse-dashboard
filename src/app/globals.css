@@ -53,6 +53,32 @@
   --warning-foreground: 0 0% 98%;
 }
 
+.cyberpunk {
+  --background: 240 20% 3%;
+  --foreground: 180 100% 90%;
+  --card: 280 100% 10%;
+  --card-foreground: 180 100% 90%;
+  --popover: 280 100% 10%;
+  --popover-foreground: 180 100% 90%;
+  --primary: 180 100% 50%;
+  --primary-foreground: 240 20% 3%;
+  --secondary: 280 50% 20%;
+  --secondary-foreground: 180 100% 70%;
+  --muted: 280 40% 15%;
+  --muted-foreground: 180 60% 60%;
+  --accent: 300 100% 50%;
+  --accent-foreground: 240 20% 3%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 180 80% 30%;
+  --input: 280 60% 15%;
+  --ring: 180 100% 50%;
+  --success: 105 100% 54%;
+  --success-foreground: 240 20% 3%;
+  --warning: 300 100% 50%;
+  --warning-foreground: 240 20% 3%;
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
