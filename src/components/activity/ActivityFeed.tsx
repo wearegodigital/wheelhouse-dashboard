@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { CyberpunkSpinner } from "@/components/ui/cyberpunk-spinner"
 import {
   useActivityFeed,
   getActivityDescription,
@@ -86,7 +87,7 @@ export function ActivityFeed({
       <CardContent className={cn(!showHeader && "pt-6")}>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <CyberpunkSpinner size="md" />
           </div>
         ) : activities.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
@@ -220,7 +221,7 @@ export function ActivityFeedCompact({
   if (isLoading) {
     return (
       <div className={cn("flex items-center justify-center py-4", className)}>
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <CyberpunkSpinner size="sm" />
       </div>
     )
   }

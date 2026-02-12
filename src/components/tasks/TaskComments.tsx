@@ -7,6 +7,7 @@ import { MessageSquare, Send, Reply, Trash2, Edit2, X, Check, User, Loader2 } fr
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { CyberpunkSpinner } from "@/components/ui/cyberpunk-spinner"
 import {
   useTaskComments,
   useAddTaskComment,
@@ -154,7 +155,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <CyberpunkSpinner size="md" />
           </div>
         )}
 

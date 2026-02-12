@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface CardSkeletonProps {
   count?: number
@@ -7,6 +8,7 @@ interface CardSkeletonProps {
 /**
  * Reusable card skeleton for loading states.
  * Consolidates the repeated skeleton patterns in list components.
+ * Automatically uses cyberpunk styling when cyberpunk theme is active.
  */
 export function CardSkeleton({ count = 3 }: CardSkeletonProps) {
   return (
@@ -14,13 +16,13 @@ export function CardSkeleton({ count = 3 }: CardSkeletonProps) {
       {Array.from({ length: count }).map((_, i) => (
         <Card key={i} className="animate-pulse">
           <CardHeader>
-            <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-            <div className="h-3 bg-muted rounded w-full" />
+            <Skeleton className="h-4 w-3/4 mb-2" />
+            <Skeleton className="h-3 w-full" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="h-3 bg-muted rounded w-1/2" />
-              <div className="h-3 bg-muted rounded w-2/3" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3 w-2/3" />
             </div>
           </CardContent>
         </Card>

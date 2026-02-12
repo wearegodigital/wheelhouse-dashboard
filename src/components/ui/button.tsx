@@ -1,9 +1,10 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
+import { Loader2 } from "lucide-react"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [.cyberpunk_&]:active:scale-95 [.cyberpunk_&]:hover:animate-[button-glitch_0.3s_ease-in-out] [.cyberpunk_&]:focus-visible:ring-[hsl(var(--primary))] [.cyberpunk_&]:focus-visible:ring-offset-0",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [.cyberpunk_&]:active:scale-95 [.cyberpunk_&]:focus-visible:ring-[hsl(var(--primary))] [.cyberpunk_&]:focus-visible:ring-offset-0",
   {
     variants: {
       variant: {
@@ -30,16 +31,29 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  loading?: boolean
+  loadingText?: string
+}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, loading, loadingText, children, disabled, ...props }, ref) => {
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled || loading}
         {...props}
-      />
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin [.cyberpunk_&]:text-primary [.cyberpunk_&]:drop-shadow-[0_0_4px_hsl(var(--primary))]" />
+            {loadingText || children}
+          </>
+        ) : (
+          children
+        )}
+      </button>
     )
   }
 )

@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { CyberpunkSpinnerText } from "@/components/ui/cyberpunk-spinner"
 import { ProgressIndicator } from "./ProgressIndicator"
 import { MessageBubble } from "./MessageBubble"
 import type { DecompositionRecommendation } from "@/types"
@@ -102,8 +103,8 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
 
       <CardContent className="flex-1 overflow-y-auto space-y-4">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            Loading...
+          <div className="flex items-center justify-center h-full">
+            <CyberpunkSpinnerText text="Initializing chat..." />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-center px-4">
