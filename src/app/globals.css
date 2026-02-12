@@ -251,3 +251,32 @@ body {
 .cyber-card:hover::after {
   transform: rotate(180deg);
 }
+
+/* Cyberpunk grid background */
+.cyber-grid {
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(hsl(var(--primary) / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.15) 1px, transparent 1px);
+  background-size: 50px 50px;
+  transform: perspective(500px) rotateX(60deg) scale(2);
+  transform-origin: center bottom;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cyber-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, hsl(var(--background)) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
