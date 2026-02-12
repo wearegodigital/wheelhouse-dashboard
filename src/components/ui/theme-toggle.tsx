@@ -1,7 +1,6 @@
 "use client"
 
 import { Moon, Sun, Zap } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,9 +8,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useThemeTransition } from "@/hooks/use-theme-transition"
 
 export function ThemeToggle() {
-  const { setTheme } = useTheme()
+  const { setTheme } = useThemeTransition()
 
   return (
     <DropdownMenu>

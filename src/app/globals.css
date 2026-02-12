@@ -121,6 +121,22 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease,
+              fill 0.3s ease, stroke 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease;
+}
+
+/* Preserve specific animation timings */
+[class*="animate-"],
+[class*="cyber-"],
+.neon-text,
+.neon-border,
+.glitch-effect,
+.scan-lines {
+  transition: none;
+}
+
 /* Progress indicator animations */
 @keyframes pulse {
   0%, 100% {
@@ -142,7 +158,6 @@ body {
   }
 }
 
-/* Cyberpunk animations use GPU-accelerated properties (transform, opacity) for better performance */
 @keyframes neon-glow {
   0%, 100% { opacity: 0.8; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.02); }
@@ -388,20 +403,20 @@ body {
 .cyberpunk .glitch-heading::before {
   color: hsl(var(--accent));
   text-shadow: -2px 0 hsl(var(--accent));
-  animation: glitch-before 3s infinite;
+  animation: glitch-flash-before 3s infinite;
 }
 .cyberpunk .glitch-heading::after {
   color: hsl(var(--warning));
   text-shadow: 2px 0 hsl(var(--warning));
-  animation: glitch-after 2.5s infinite;
+  animation: glitch-flash-after 2.5s infinite;
 }
 
-@keyframes glitch-before {
+@keyframes glitch-flash-before {
   0%, 94%, 100% { opacity: 0; }
   95% { opacity: 0.7; transform: translate(-2px, 2px); }
 }
 
-@keyframes glitch-after {
+@keyframes glitch-flash-after {
   0%, 96%, 100% { opacity: 0; }
   97% { opacity: 0.6; transform: translate(2px, -2px); }
 }
@@ -410,8 +425,10 @@ body {
 .cyberpunk input:where([type="text"], [type="email"], [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"]),
 .cyberpunk textarea,
 .cyberpunk select {
-  background: hsl(var(--input)) linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
-              linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px;
+  background:
+    linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
+    hsl(var(--input));
   border: 1px solid hsl(var(--border));
   color: hsl(var(--foreground));
   box-shadow: 0 0 4px hsl(var(--primary) / 0.15), inset 0 0 8px hsl(var(--primary) / 0.05);
@@ -694,12 +711,157 @@ body {
 }
 
 .cyberpunk :is(a, [role="link"]).glitch-link {
-  animation: link-glitch 5s infinite;
+  animation: glitch-subtle 5s infinite;
   will-change: transform;
 }
 
-@keyframes link-glitch {
+@keyframes glitch-subtle {
   0%, 98%, 100% { transform: translateX(0); }
   99% { transform: translateX(-1px); }
   99.5% { transform: translateX(1px); }
+}
+
+/* Theme transition overlay */
+.theme-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Fade transition (for non-cyberpunk themes) */
+.theme-transition-overlay.fade {
+  background-color: hsl(var(--background));
+}
+
+.theme-transition-overlay.fade.active {
+  opacity: 1;
+  animation: fade-transition 0.3s ease;
+}
+
+@keyframes fade-transition {
+  0% { opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+/* Glitch transition (for cyberpunk theme) */
+.theme-transition-overlay.glitch {
+  background: linear-gradient(45deg,
+    hsl(180 100% 50% / 0.1),
+    hsl(300 100% 50% / 0.1)
+  );
+}
+
+.theme-transition-overlay.glitch.active {
+  animation: glitch-transition 0.4s ease;
+}
+
+@keyframes glitch-transition {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  10% {
+    opacity: 0.3;
+    transform: translateX(-5px);
+    filter: hue-rotate(90deg);
+  }
+  20% {
+    opacity: 0.6;
+    transform: translateX(5px);
+    filter: hue-rotate(-90deg);
+  }
+  30% {
+    opacity: 0.9;
+    transform: translateX(-3px);
+    filter: hue-rotate(180deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(3px);
+    filter: hue-rotate(-180deg);
+    box-shadow:
+      0 0 20px hsl(180 100% 50% / 0.5),
+      0 0 40px hsl(300 100% 50% / 0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0) scale(1.02);
+    filter: brightness(1.5) contrast(1.2);
+    box-shadow:
+      0 0 30px hsl(180 100% 50% / 0.8),
+      0 0 60px hsl(300 100% 50% / 0.8);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateX(2px) scale(1);
+    filter: hue-rotate(90deg);
+  }
+  70% {
+    opacity: 0.5;
+    transform: translateX(-2px);
+    filter: hue-rotate(-90deg);
+  }
+  80% {
+    opacity: 0.3;
+    transform: translateX(1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0);
+    filter: none;
+  }
+}
+
+/* Flash effect at peak of transition */
+.theme-transition-overlay.glitch.active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 25%,
+    hsl(180 100% 50% / 0.3) 45%,
+    hsl(300 100% 50% / 0.3) 55%,
+    transparent 75%
+  );
+  animation: flash-sweep 0.4s ease;
+}
+
+@keyframes flash-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Scanline effect during transition */
+.theme-transition-overlay.glitch.active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    hsl(180 100% 50% / 0.1) 2px,
+    hsl(180 100% 50% / 0.1) 4px
+  );
+  animation: scanline-glitch 0.4s linear;
+}
+
+@keyframes scanline-glitch {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
