@@ -145,6 +145,18 @@ body {
   20%, 40% { transform: translateX(2px); }
 }
 
+@keyframes button-glitch {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px) skewX(-1deg);
+  }
+  75% {
+    transform: translateX(2px) skewX(1deg);
+  }
+}
+
 @keyframes scan-line {
   from { transform: translateY(-100%); }
   to { transform: translateY(100%); }
