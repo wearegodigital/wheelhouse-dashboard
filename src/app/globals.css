@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   THEME COLOR PALETTES
+   =========================================================================== */
 :root {
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
@@ -27,6 +30,7 @@
   --warning-foreground: 0 0% 98%;
 }
 
+/* Dark Theme */
 .dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
@@ -53,6 +57,7 @@
   --warning-foreground: 0 0% 98%;
 }
 
+/* Cyberpunk Theme - Neon colors with glowing effects */
 .cyberpunk {
   --background: 240 20% 3%;
   --foreground: 180 100% 90%;
@@ -78,6 +83,10 @@
   --warning: 300 100% 50%;
   --warning-foreground: 240 20% 3%;
 }
+
+/* ===========================================================================
+   BASE STYLES
+   =========================================================================== */
 
 @theme inline {
   --color-background: hsl(var(--background));
@@ -121,7 +130,7 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Smooth transitions for theme changes */
+/* Theme transitions */
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease,
               fill 0.3s ease, stroke 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease;
@@ -137,7 +146,11 @@ body {
   transition: none;
 }
 
-/* Progress indicator animations */
+/* ===========================================================================
+   ANIMATIONS
+   =========================================================================== */
+
+/* Progress animations */
 @keyframes pulse {
   0%, 100% {
     opacity: 0.3;
@@ -158,6 +171,7 @@ body {
   }
 }
 
+/* Cyberpunk effect animations */
 @keyframes neon-glow {
   0%, 100% { opacity: 0.8; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.02); }
@@ -174,13 +188,18 @@ body {
   to { transform: translateY(100%); }
 }
 
-/* Cyberpunk utility classes */
+/* ===========================================================================
+   CYBERPUNK UTILITY CLASSES
+   =========================================================================== */
+
+/* Neon text with pulsing glow */
 .neon-text {
   text-shadow: 0 0 2px currentColor, 0 0 4px currentColor, 0 0 8px currentColor;
   animation: neon-glow 2s ease-in-out infinite;
   will-change: opacity, transform;
 }
 
+/* Neon border with pulsing glow */
 .neon-border {
   border: 1px solid hsl(var(--primary));
   box-shadow: 0 0 4px hsl(var(--primary)), inset 0 0 4px hsl(var(--primary));
@@ -188,6 +207,7 @@ body {
   will-change: opacity, transform;
 }
 
+/* Glitch effect - requires data-text attribute */
 .glitch-effect {
   position: relative;
 }
@@ -215,6 +235,7 @@ body {
   animation-direction: reverse;
 }
 
+/* CRT scan line effect */
 .scan-lines {
   position: relative;
   overflow: hidden;
@@ -242,6 +263,7 @@ body {
   will-change: transform;
 }
 
+/* Interactive card with glow and shine effects */
 .cyber-card {
   position: relative;
   overflow: hidden;
@@ -269,7 +291,7 @@ body {
   transform: rotate(180deg);
 }
 
-/* Cyberpunk grid background */
+/* 3D perspective grid background */
 .cyber-grid {
   position: relative;
   overflow: hidden;
@@ -298,7 +320,7 @@ body {
   z-index: 1;
 }
 
-/* Spinner and effect animations */
+/* Spinner animations */
 @keyframes cyber-spin {
   to { transform: rotate(360deg); }
 }
@@ -321,7 +343,7 @@ body {
   to { background-position: 200% 0; }
 }
 
-/* Cyberpunk spinner styles */
+/* Spinner components */
 .cyber-spinner-ring {
   position: absolute;
   inset: 0;
@@ -372,7 +394,11 @@ body {
   will-change: transform, opacity;
 }
 
-/* Cyberpunk heading effects */
+/* ===========================================================================
+   CYBERPUNK COMPONENT STYLING
+   =========================================================================== */
+
+/* Headings with neon glow */
 .cyberpunk h1, .cyberpunk h2, .cyberpunk h3, .cyberpunk h4 {
   position: relative;
   font-family: var(--font-cyber), system-ui, sans-serif;
@@ -421,7 +447,7 @@ body {
   97% { opacity: 0.6; transform: translate(2px, -2px); }
 }
 
-/* Cyberpunk form styling */
+/* Form elements with cyberpunk styling */
 .cyberpunk input:where([type="text"], [type="email"], [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"]),
 .cyberpunk textarea,
 .cyberpunk select {
@@ -604,7 +630,7 @@ body {
   text-shadow: 0 0 6px hsl(var(--primary) / 0.4);
 }
 
-/* Cyberpunk link styles */
+/* Links with hover effects */
 .cyberpunk :is(a, [role="link"]) {
   position: relative;
   color: hsl(var(--primary));
@@ -721,7 +747,11 @@ body {
   99.5% { transform: translateX(1px); }
 }
 
-/* Theme transition overlay */
+/* ===========================================================================
+   THEME TRANSITIONS
+   =========================================================================== */
+
+/* Transition overlay effects */
 .theme-transition-overlay {
   position: fixed;
   inset: 0;
