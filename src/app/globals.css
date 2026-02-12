@@ -327,3 +327,183 @@ body {
   97% { opacity: 0.6; transform: translate(2px, -2px); }
   98% { opacity: 0.4; transform: translate(-1px, 1px); }
 }
+
+/* Cyberpunk form styling */
+.cyberpunk input:where([type="text"], [type="email"], [type="password"], [type="search"], [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"]),
+.cyberpunk textarea,
+.cyberpunk select {
+  background: hsl(var(--input)) linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
+              linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px) 0 0 / 20px 20px;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.15), inset 0 0 8px hsl(var(--primary) / 0.05);
+  transition: all 0.3s ease;
+}
+
+.cyberpunk input::placeholder,
+.cyberpunk textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875em;
+}
+
+.cyberpunk input:hover,
+.cyberpunk textarea:hover,
+.cyberpunk select:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.08);
+}
+
+.cyberpunk input:focus,
+.cyberpunk textarea:focus,
+.cyberpunk select:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 16px hsl(var(--primary) / 0.3),
+              0 0 24px hsl(var(--primary) / 0.15), inset 0 0 12px hsl(var(--primary) / 0.1);
+  animation: neon-glow 2s ease-in-out infinite;
+}
+
+.cyberpunk input:disabled,
+.cyberpunk textarea:disabled,
+.cyberpunk select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  animation: none;
+}
+
+.cyberpunk input:where([type="checkbox"], [type="radio"]) {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: hsl(var(--input));
+  border: 1px solid hsl(var(--border));
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.15), inset 0 0 6px hsl(var(--primary) / 0.05);
+}
+
+.cyberpunk input[type="checkbox"] { border-radius: 3px; }
+.cyberpunk input[type="radio"] { border-radius: 50%; }
+
+.cyberpunk input:where([type="checkbox"], [type="radio"]):hover {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.3), inset 0 0 8px hsl(var(--primary) / 0.08);
+}
+
+.cyberpunk input:where([type="checkbox"], [type="radio"]):checked {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 16px hsl(var(--primary) / 0.3), inset 0 0 4px hsl(var(--background));
+}
+
+.cyberpunk input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 5px;
+  height: 10px;
+  border: solid hsl(var(--primary-foreground));
+  border-width: 0 2px 2px 0;
+}
+
+.cyberpunk input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary-foreground));
+  box-shadow: 0 0 4px hsl(var(--primary-foreground));
+}
+
+.cyberpunk input[type="file"] {
+  padding: 0.5rem;
+  background-color: hsl(var(--input));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.15), inset 0 0 8px hsl(var(--primary) / 0.05);
+  transition: all 0.3s ease;
+}
+
+.cyberpunk input[type="file"]:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.08);
+}
+
+.cyberpunk input[type="file"]::file-selector-button {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--primary) / 0.3);
+  padding: 0.375rem 0.75rem;
+  margin-right: 1rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.2);
+  transition: all 0.3s ease;
+}
+
+.cyberpunk input[type="file"]::file-selector-button:hover {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.5), 0 0 12px hsl(var(--primary) / 0.3);
+}
+
+.cyberpunk input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+  border-radius: 3px;
+  outline: none;
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.3), inset 0 0 4px hsl(var(--background));
+}
+
+.cyberpunk input[type="range"]::-webkit-slider-thumb,
+.cyberpunk input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background-color: hsl(var(--primary));
+  border: 2px solid hsl(var(--background));
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 16px hsl(var(--primary) / 0.3);
+  transition: all 0.3s ease;
+}
+
+.cyberpunk input[type="range"]::-webkit-slider-thumb:hover,
+.cyberpunk input[type="range"]::-moz-range-thumb:hover {
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.8), 0 0 24px hsl(var(--primary) / 0.5);
+  transform: scale(1.1);
+}
+
+.cyberpunk label {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  text-shadow: 0 0 4px hsl(var(--primary) / 0.2);
+}
+
+.cyberpunk fieldset {
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.2), inset 0 0 8px hsl(var(--primary) / 0.05);
+}
+
+.cyberpunk legend {
+  color: hsl(var(--primary));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 6px hsl(var(--primary) / 0.4);
+}
