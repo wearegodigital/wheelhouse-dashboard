@@ -63,11 +63,11 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
 
   return (
     <Link href={`/projects/${project.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+      <Card className="hover:shadow-md transition-all duration-300 cursor-pointer h-full group [.cyberpunk_&]:hover:shadow-[0_0_12px_hsl(var(--primary)/0.4),0_0_24px_hsl(var(--primary)/0.2),inset_0_0_8px_hsl(var(--primary)/0.1)] [.cyberpunk_&]:hover:border-primary [.cyberpunk_&]:hover:scale-[1.02]">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <CardTitle className="truncate">{project.name}</CardTitle>
+              <CardTitle className="truncate [.cyberpunk_&]:group-hover:text-primary [.cyberpunk_&]:group-hover:drop-shadow-[0_0_4px_hsl(var(--primary)/0.5)] transition-all duration-300">{project.name}</CardTitle>
               <CardDescription className="line-clamp-2 mt-1">
                 {project.description}
               </CardDescription>
@@ -79,22 +79,22 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <GitBranch className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground [.cyberpunk_&]:group-hover:text-primary/70 transition-colors duration-300">
+              <GitBranch className="h-4 w-4 [.cyberpunk_&]:group-hover:drop-shadow-[0_0_2px_hsl(var(--primary)/0.4)]" />
               <span className="truncate">{project.repo_url}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <FolderGit2 className="h-4 w-4 text-muted-foreground" />
+                <FolderGit2 className="h-4 w-4 text-muted-foreground [.cyberpunk_&]:group-hover:text-primary/70 [.cyberpunk_&]:group-hover:drop-shadow-[0_0_2px_hsl(var(--primary)/0.4)] transition-all duration-300" />
                 <span>
-                  <span className="font-medium">{project.sprint_count}</span> {pluralize(project.sprint_count, "sprint")}
+                  <span className="font-medium [.cyberpunk_&]:group-hover:text-primary transition-colors duration-300">{project.sprint_count}</span> {pluralize(project.sprint_count, "sprint")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground [.cyberpunk_&]:group-hover:text-primary/70 [.cyberpunk_&]:group-hover:drop-shadow-[0_0_2px_hsl(var(--primary)/0.4)] transition-all duration-300" />
                 <span>
-                  <span className="font-medium">{project.task_count}</span> {pluralize(project.task_count, "task")}
+                  <span className="font-medium [.cyberpunk_&]:group-hover:text-primary transition-colors duration-300">{project.task_count}</span> {pluralize(project.task_count, "task")}
                 </span>
               </div>
             </div>
@@ -102,14 +102,10 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
             {project.task_count > 0 && (
               <ProgressBar
                 value={progress}
-                label="Progress"
+                label={`${project.tasks_completed} of ${project.task_count} completed`}
                 sublabel={`${progress}%`}
+                className="[.cyberpunk_&]:group-hover:drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]"
               />
-            )}
-            {project.task_count > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {project.tasks_completed} of {project.task_count} completed
-              </div>
             )}
           </div>
         </CardContent>

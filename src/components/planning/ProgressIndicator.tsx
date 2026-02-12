@@ -53,38 +53,22 @@ export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) 
   // Reset startTime and messageIndex when phase changes
   useEffect(() => {
     if (phase.phase !== phaseKey) {
-      // eslint-disable-next-line -- Phase tracking state must update on external phase change
       setPhaseKey(phase.phase)
       setStartTime(Date.now())
       setMessageIndex(0)
     }
   }, [phase.phase, phaseKey])
 
-  // Cycle messages every 5 seconds for variety
+  // Cycle messages every 5 seconds and animate dots
   useEffect(() => {
-    if (isComplete) {
-      return
-    }
+    if (isComplete) return
 
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => prev + 1)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [isComplete])
-
-  // Animate dots while waiting (only when not complete)
-  useEffect(() => {
-    if (isComplete) {
-      return
-    }
-
-    const interval = setInterval(() => {
-      setDotCount((prev) => (prev >= 3 ? 0 : prev + 1))
-    }, 500)
+    const messageInterval = setInterval(() => setMessageIndex((prev) => prev + 1), 5000)
+    const dotInterval = setInterval(() => setDotCount((prev) => (prev >= 3 ? 0 : prev + 1)), 500)
 
     return () => {
-      clearInterval(interval)
+      clearInterval(messageInterval)
+      clearInterval(dotInterval)
       setDotCount(0)
     }
   }, [isComplete, phase.phase])
@@ -106,6 +90,9 @@ export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) 
       className={cn(
         "flex items-center gap-3 p-4 rounded-lg border bg-muted/30 transition-all duration-300",
         isComplete && "bg-emerald-500/10 border-emerald-500/30",
+        "cyberpunk:bg-gradient-to-r cyberpunk:from-primary/5 cyberpunk:via-accent/5 cyberpunk:to-primary/5",
+        "cyberpunk:border-primary/30 cyberpunk:shadow-[0_0_10px_hsl(var(--primary)/0.2)]",
+        isComplete && "cyberpunk:border-success/50 cyberpunk:shadow-[0_0_15px_hsl(var(--success)/0.4)]",
         className
       )}
     >
@@ -113,13 +100,14 @@ export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) 
         <IconComponent
           className={cn(
             "h-5 w-5 transition-transform",
-            shouldAnimate && "animate-spin"
+            shouldAnimate && "animate-spin",
+            "cyberpunk:drop-shadow-[0_0_6px_currentColor]"
           )}
         />
         {!isComplete && (
           <span className="absolute -top-1 -right-1 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-current" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75 cyberpunk:opacity-90" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-current cyberpunk:shadow-[0_0_4px_currentColor]" />
           </span>
         )}
       </div>

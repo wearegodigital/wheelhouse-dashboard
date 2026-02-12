@@ -96,11 +96,11 @@ export function ExecutionControls({
       {showRun && (
         <Button
           onClick={handleRun}
-          disabled={isPending}
+          loading={isPending}
           variant="default"
           size="sm"
         >
-          <Play className="mr-2 h-4 w-4" />
+          {!isPending && <Play className="mr-2 h-4 w-4" />}
           Run
         </Button>
       )}
@@ -108,11 +108,11 @@ export function ExecutionControls({
       {showPause && (
         <Button
           onClick={handlePause}
-          disabled={isPending}
+          loading={isPending}
           variant="secondary"
           size="sm"
         >
-          <Pause className="mr-2 h-4 w-4" />
+          {!isPending && <Pause className="mr-2 h-4 w-4" />}
           Pause
         </Button>
       )}
@@ -120,11 +120,11 @@ export function ExecutionControls({
       {showCancel && (
         <Button
           onClick={handleCancel}
-          disabled={isPending}
+          loading={isPending}
           variant="destructive"
           size="sm"
         >
-          <XCircle className="mr-2 h-4 w-4" />
+          {!isPending && <XCircle className="mr-2 h-4 w-4" />}
           Cancel
         </Button>
       )}
