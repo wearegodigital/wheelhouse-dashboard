@@ -9,8 +9,6 @@ interface ProgressBarProps {
   className?: string
 }
 
-const CYBERPUNK_GLOW = "[.cyberpunk_&]:shadow-[0_0_8px_var(--glow)/0.8,0_0_12px_var(--glow)/0.4,inset_0_0_6px_var(--glow)/0.6]"
-
 export function ProgressBar({
   value,
   label,
@@ -21,12 +19,12 @@ export function ProgressBar({
 }: ProgressBarProps) {
   const getBarColor = () => {
     if (status === "completed") {
-      return `bg-green-500 [.cyberpunk_&]:bg-[hsl(var(--success))] ${CYBERPUNK_GLOW.replace(/--glow/g, "--success")}`
+      return "bg-green-500 [.cyberpunk_&]:bg-success [.cyberpunk_&]:shadow-[0_0_8px_hsl(var(--success)/0.8),0_0_12px_hsl(var(--success)/0.4),inset_0_0_6px_hsl(var(--success)/0.6)]"
     }
     if (status === "failed") {
-      return `bg-red-500 [.cyberpunk_&]:bg-[hsl(var(--destructive))] ${CYBERPUNK_GLOW.replace(/--glow/g, "--destructive")} [.cyberpunk_&]:animate-pulse`
+      return "bg-red-500 [.cyberpunk_&]:bg-destructive [.cyberpunk_&]:shadow-[0_0_8px_hsl(var(--destructive)/0.8),0_0_12px_hsl(var(--destructive)/0.4),inset_0_0_6px_hsl(var(--destructive)/0.6)] [.cyberpunk_&]:animate-pulse"
     }
-    return `bg-primary ${CYBERPUNK_GLOW.replace(/--glow/g, "--primary")}`
+    return "bg-primary [.cyberpunk_&]:shadow-[0_0_8px_hsl(var(--primary)/0.8),0_0_12px_hsl(var(--primary)/0.4),inset_0_0_6px_hsl(var(--primary)/0.6)]"
   }
 
   return (

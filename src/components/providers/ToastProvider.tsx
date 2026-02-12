@@ -1,5 +1,6 @@
 "use client"
 import { createContext, useContext, useState, useCallback, ReactNode } from "react"
+import { CyberCorners } from "@/components/ui/cyber-corners"
 
 interface Toast {
   id: string
@@ -95,11 +96,7 @@ function ToastContainer({
             </svg>
           </button>
 
-          {/* Corner accents */}
-          <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-current opacity-60" />
-          <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-current opacity-60" />
-          <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-current opacity-60" />
-          <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-current opacity-60" />
+          <CyberCorners />
         </div>
       )})}
     </div>

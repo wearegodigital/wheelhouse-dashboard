@@ -192,6 +192,23 @@ body {
    CYBERPUNK UTILITY CLASSES
    =========================================================================== */
 
+/* Shadow/Glow utilities (reusable) */
+.shadow-glow-xs {
+  box-shadow: 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+.shadow-glow-sm {
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.3);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.6), 0 0 16px hsl(var(--primary) / 0.3);
+}
+
+.shadow-glow-lg {
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.8), 0 0 24px hsl(var(--primary) / 0.5);
+}
+
 /* Neon text with pulsing glow */
 .neon-text {
   text-shadow: 0 0 2px currentColor, 0 0 4px currentColor, 0 0 8px currentColor;

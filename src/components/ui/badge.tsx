@@ -7,12 +7,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80 cyberpunk:shadow-glow-sm cyberpunk:hover:shadow-glow",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 cyberpunk:shadow-glow-xs cyberpunk:hover:shadow-glow-sm",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80 cyberpunk:shadow-glow cyberpunk:hover:shadow-glow-lg cyberpunk:animate-pulse",
-        outline: "text-foreground cyberpunk:border-primary cyberpunk:text-primary cyberpunk:shadow-glow-xs",
-        success: "border-transparent bg-green-500 text-white cyberpunk:bg-[hsl(var(--success))] cyberpunk:text-success-foreground cyberpunk:shadow-glow cyberpunk:hover:shadow-glow-lg",
-        warning: "border-transparent bg-yellow-500 text-white cyberpunk:bg-[hsl(var(--warning))] cyberpunk:text-warning-foreground cyberpunk:shadow-glow cyberpunk:hover:shadow-glow-lg",
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80 [.cyberpunk_&]:shadow-glow-sm [.cyberpunk_&]:hover:shadow-glow",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 [.cyberpunk_&]:shadow-glow-xs [.cyberpunk_&]:hover:shadow-glow-sm",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80 [.cyberpunk_&]:shadow-glow [.cyberpunk_&]:hover:shadow-glow-lg [.cyberpunk_&]:animate-pulse",
+        outline: "text-foreground [.cyberpunk_&]:border-primary [.cyberpunk_&]:text-primary [.cyberpunk_&]:shadow-glow-xs",
+        success: "border-transparent bg-green-500 text-white [.cyberpunk_&]:bg-success [.cyberpunk_&]:text-success-foreground [.cyberpunk_&]:shadow-glow [.cyberpunk_&]:hover:shadow-glow-lg",
+        warning: "border-transparent bg-yellow-500 text-white [.cyberpunk_&]:bg-warning [.cyberpunk_&]:text-warning-foreground [.cyberpunk_&]:shadow-glow [.cyberpunk_&]:hover:shadow-glow-lg",
       },
     },
     defaultVariants: {
