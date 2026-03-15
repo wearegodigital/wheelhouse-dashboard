@@ -4,6 +4,15 @@ import { createClient } from "@/lib/supabase/server"
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
 export async function DELETE(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const entityType = searchParams.get("type") // projects, sprints, tasks
   const entityId = searchParams.get("id")
@@ -31,7 +40,6 @@ export async function DELETE(request: NextRequest) {
       const query = params.toString()
 
       const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}${query ? `?${query}` : ""}`
-      console.log(`Calling Modal API: DELETE ${modalUrl}`)
 
       const response = await fetch(modalUrl, {
         method: "DELETE",
@@ -46,10 +54,11 @@ export async function DELETE(request: NextRequest) {
           // No need for Supabase cleanup, Modal already did the soft delete
           return NextResponse.json(data)
         }
-        // If not 404, return the Modal error as-is
+        // If not 404, return generic error
         if (response.status !== 404) {
+          console.error('[delete] Modal API error:', response.status, data.message || data.error)
           return NextResponse.json(
-            { success: false, message: data.message || `Modal API error: ${response.status}`, error: data.error },
+            { success: false, message: 'Delete request failed' },
             { status: response.status }
           )
         }
@@ -123,9 +132,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (deleteError) {
-      console.error("Supabase soft delete error:", deleteError)
+      console.error("[delete] Supabase soft delete error:", deleteError)
       return NextResponse.json(
-        { success: false, message: deleteError.message },
+        { success: false, message: 'Delete request failed' },
         { status: 500 }
       )
     }
@@ -136,9 +145,9 @@ export async function DELETE(request: NextRequest) {
       deleted_at: now,
     })
   } catch (error) {
-    console.error("Supabase fallback soft delete error:", error)
+    console.error("[delete] Supabase fallback soft delete error:", error)
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     )
   }

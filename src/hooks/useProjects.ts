@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { deleteProject as deleteProjectApi, createProject as createProjectApi } from "@/lib/api/wheelhouse"
+import { sanitizeSearch } from "@/lib/utils"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
 export function useProjects(filters?: ProjectFilters) {
@@ -17,7 +18,10 @@ export function useProjects(filters?: ProjectFilters) {
         query = query.eq("status", filters.status)
       }
       if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+        const search = sanitizeSearch(filters.search)
+        if (search) {
+          query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+        }
       }
 
       const { data, error } = await query

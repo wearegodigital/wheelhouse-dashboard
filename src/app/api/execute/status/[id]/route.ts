@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   const { id } = await params
   const modalApiUrl = process.env.MODAL_API_URL
 
   if (!modalApiUrl) {
+    console.error('[execute/status] MODAL_API_URL environment variable is not configured')
     return NextResponse.json(
-      { error: 'Server configuration error', details: 'Modal API URL is not configured' },
+      { error: 'Server configuration error' },
       { status: 500 }
     )
   }
@@ -23,8 +34,9 @@ export async function GET(
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('[execute/status] Modal API error:', response.status, errorText)
       return NextResponse.json(
-        { error: 'Status fetch failed', details: errorText },
+        { error: 'Status fetch failed' },
         { status: response.status }
       )
     }
@@ -32,8 +44,9 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    console.error('[execute/status] Error fetching status:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

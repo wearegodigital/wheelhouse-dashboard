@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { verifyMultipleEntities } from '@/lib/sync-verification'
 
 /**
@@ -31,10 +32,19 @@ interface ModalApproveResponse {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   if (!MODAL_API_URL) {
     console.error('MODAL_API_URL environment variable is not configured')
     return NextResponse.json(
-      { error: 'Server configuration error: MODAL_API_URL not set' },
+      { error: 'Server configuration error' },
       { status: 500 }
     )
   }
@@ -66,9 +76,9 @@ export async function POST(request: NextRequest) {
 
     if (!modalResponse.ok) {
       const errorText = await modalResponse.text()
-      console.error('Modal approve error:', modalResponse.status, errorText)
+      console.error('[approve] Modal approve error:', modalResponse.status, errorText)
       return NextResponse.json(
-        { error: 'Failed to approve recommendation', details: errorText },
+        { error: 'Failed to approve recommendation' },
         { status: modalResponse.status }
       )
     }
@@ -76,15 +86,16 @@ export async function POST(request: NextRequest) {
     const result: ModalApproveResponse = await modalResponse.json()
 
     if (!result.success) {
+      console.error('[approve] Backend approval failed:', result.error, result.message)
       return NextResponse.json(
-        { error: result.error || 'Approval failed', message: result.message },
+        { error: 'Approval failed' },
         { status: 500 }
       )
     }
 
     // 2. Update LOCAL conversation status (this stays in Supabase - not event-sourced)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY
 
     if (supabaseConversationId && supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -147,12 +158,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Approve API error:', error)
+    console.error('[approve] Approve API error:', error)
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

@@ -44,6 +44,35 @@ async function getRepoUrl(projectId?: string, sprintId?: string): Promise<string
 }
 
 export async function POST(request: NextRequest) {
+  // Edge Runtime auth: verify JWT from Authorization header using Supabase anon key
+  const authHeader = request.headers.get('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return new Response(
+      JSON.stringify({ error: 'Authentication required' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+  const token = authHeader.slice(7)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+  const { createClient: createEdgeClient } = await import('@supabase/supabase-js')
+  const edgeSupabase = createEdgeClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  })
+  const { data: { user }, error: authError } = await edgeSupabase.auth.getUser(token)
+  if (authError || !user) {
+    return new Response(
+      JSON.stringify({ error: 'Authentication required' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   try {
     const body = (await request.json()) as PlanningChatRequest
 
@@ -100,17 +129,13 @@ export async function POST(request: NextRequest) {
           JSON.stringify({
             error: 'Session not found or expired',
             code: 'SESSION_EXPIRED',
-            details: errorText
           }),
           { status: 404, headers: { 'Content-Type': 'application/json' } }
         )
       }
 
       return new Response(
-        JSON.stringify({
-          error: 'Failed to connect to planning service',
-          details: errorText,
-        }),
+        JSON.stringify({ error: 'Failed to connect to planning service' }),
         {
           status: response.status,
           headers: { 'Content-Type': 'application/json' },
@@ -142,12 +167,9 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error processing planning request:', error)
+    console.error('[planning] Error processing planning request:', error)
     return new Response(
-      JSON.stringify({
-        error: 'Failed to process request',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }),
+      JSON.stringify({ error: 'Failed to process request' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

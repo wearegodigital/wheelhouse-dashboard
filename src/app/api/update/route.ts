@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 /**
  * Update API Route
@@ -19,6 +20,15 @@ const MODAL_API_URL = process.env.MODAL_API_URL || ""
 type EntityType = "projects" | "sprints" | "tasks"
 
 export async function PUT(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   if (!MODAL_API_URL) {
     console.error("MODAL_API_URL environment variable is not configured")
     return NextResponse.json(
@@ -76,7 +86,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}`
-    console.log(`Calling Modal API: PUT ${modalUrl}`)
 
     const response = await fetch(modalUrl, {
       method: "PUT",
@@ -90,13 +99,9 @@ export async function PUT(request: NextRequest) {
     const contentType = response.headers.get("content-type")
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text()
-      console.error(`Modal API returned non-JSON response (${response.status}):`, text.slice(0, 200))
+      console.error(`[update] Modal API returned non-JSON response (${response.status}):`, text.slice(0, 200))
       return NextResponse.json(
-        {
-          success: false,
-          message: `Modal API unavailable or returned invalid response (status: ${response.status}). Check MODAL_API_URL configuration.`,
-          debug: { url: modalUrl, status: response.status }
-        },
+        { success: false, message: 'Update request failed' },
         { status: 502 }
       )
     }
@@ -104,17 +109,18 @@ export async function PUT(request: NextRequest) {
     const data = await response.json()
 
     if (!response.ok || !data.success) {
+      console.error('[update] Modal API error:', response.status, data.message || data.error)
       return NextResponse.json(
-        { success: false, message: data.message || data.error || `Modal API error: ${response.status}` },
+        { success: false, message: 'Update request failed' },
         { status: response.status }
       )
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("Update API error:", error)
+    console.error("[update] Update API error:", error)
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     )
   }

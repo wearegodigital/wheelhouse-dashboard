@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * Execution Control API Route
@@ -40,6 +41,15 @@ interface ErrorResponse {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   try {
     // Parse request body
     const body: ExecutionRequest = await request.json()
@@ -122,13 +132,10 @@ export async function POST(request: NextRequest) {
         errorDetails = errorText
       }
 
-      console.error(`Modal API error (${modalResponse.status}):`, errorDetails)
+      console.error(`[execute] Modal API error (${modalResponse.status}):`, errorDetails)
 
       return NextResponse.json(
-        {
-          error: 'Execution failed',
-          details: errorDetails
-        } as ErrorResponse,
+        { success: false, error: 'Execution request failed' } as ErrorResponse,
         { status: modalResponse.status }
       )
     }
@@ -142,10 +149,7 @@ export async function POST(request: NextRequest) {
     console.error('Execution API error:', error)
 
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
-      } as ErrorResponse,
+      { success: false, error: 'Internal server error' } as ErrorResponse,
       { status: 500 }
     )
   }

@@ -44,3 +44,12 @@ export function parseRepoUrl(url: string): { owner: string; repo: string } | nul
   if (!match) return null
   return { owner: match[1], repo: match[2] }
 }
+
+/**
+ * Sanitize search input for safe use in PostgREST filters.
+ * Strips characters that could be interpreted as PostgREST operators.
+ */
+export function sanitizeSearch(input: string): string {
+  // Remove PostgREST operator characters that could manipulate filter logic
+  return input.replace(/[,.()\[\]{}]/g, '').trim()
+}

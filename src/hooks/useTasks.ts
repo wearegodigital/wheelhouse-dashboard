@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { deleteTask as deleteTaskApi, createTask as createTaskApi } from "@/lib/api/wheelhouse"
+import { sanitizeSearch } from "@/lib/utils"
 import type { TaskSummary, TaskFilters } from "@/types"
 
 export function useTasks(filters?: TaskFilters) {
@@ -28,7 +29,10 @@ export function useTasks(filters?: TaskFilters) {
         query = query.eq("sprint_id", filters.sprintId)
       }
       if (filters?.search) {
-        query = query.ilike("description", `%${filters.search}%`)
+        const search = sanitizeSearch(filters.search)
+        if (search) {
+          query = query.ilike("description", `%${search}%`)
+        }
       }
       if (filters?.dateFrom) {
         query = query.gte("created_at", filters.dateFrom)

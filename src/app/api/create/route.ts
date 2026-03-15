@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
+
 type EntityType = "projects" | "sprints" | "tasks"
 
 interface CreateProjectBody {
@@ -28,6 +29,15 @@ interface CreateTaskBody {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
+
   if (!MODAL_API_URL) {
     console.error("MODAL_API_URL environment variable is not configured")
     return NextResponse.json(
@@ -99,8 +109,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
 
     if (!response.ok || !data.success) {
+      console.error('[create] Modal API error:', response.status, data.message || data.error)
       return NextResponse.json(
-        { success: false, message: data.message || data.error || `Modal API error: ${response.status}` },
+        { success: false, message: 'Create request failed' },
         { status: response.status }
       )
     }
@@ -115,7 +126,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Create API error:", error)
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     )
   }
