@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, ExternalLink, GitBranch, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,28 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
           </div>
           {sprint.description && (
             <p className="text-muted-foreground">{sprint.description}</p>
+          )}
+          {/* Branch & PR Info */}
+          {(sprint.branch || sprint.pr_url) && (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {sprint.branch && (
+                <div className="flex items-center gap-1.5">
+                  <GitBranch className="h-4 w-4" />
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{sprint.branch}</code>
+                </div>
+              )}
+              {sprint.pr_url && (
+                <a
+                  href={sprint.pr_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Pull Request
+                </a>
+              )}
+            </div>
           )}
         </div>
 

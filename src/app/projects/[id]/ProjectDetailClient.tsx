@@ -206,6 +206,27 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
                   </span>
                 </div>
               )}
+              {(initialProject.branch || initialProject.pr_url) && (
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {initialProject.branch && (
+                    <div className="flex items-center gap-1.5">
+                      <GitBranch className="h-4 w-4" />
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{initialProject.branch}</code>
+                    </div>
+                  )}
+                  {initialProject.pr_url && (
+                    <a
+                      href={initialProject.pr_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Pull Request
+                    </a>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

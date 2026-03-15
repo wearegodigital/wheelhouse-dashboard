@@ -40,6 +40,7 @@ export function useProject(id: string) {
         .from("projects")
         .select("*")
         .eq("id", id)
+        .is("deleted_at", null)
         .single()
       if (error) throw error
       return data

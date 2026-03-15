@@ -13,16 +13,21 @@ export function getStatusBadgeVariant(status: string): BadgeVariant {
       return "success"
     case "running":
     case "validating":
+    case "in_progress":
       return "default"
     case "failed":
     case "cancelled":
       return "destructive"
     case "ready":
+    case "checking":
       return "warning"
+    case "assigned":
+      return "default"
     case "paused":
     case "draft":
     case "planning":
     case "pending":
+    case "queued":
     case "spawned":
       return "secondary"
     default:

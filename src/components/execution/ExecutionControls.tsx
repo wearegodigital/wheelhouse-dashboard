@@ -108,9 +108,10 @@ export function ExecutionControls({
       {showPause && (
         <Button
           onClick={handlePause}
-          loading={isPending}
+          disabled={true}
           variant="secondary"
           size="sm"
+          title="Pause not yet supported"
         >
           {!isPending && <Pause className="mr-2 h-4 w-4" />}
           Pause
@@ -120,9 +121,10 @@ export function ExecutionControls({
       {showCancel && (
         <Button
           onClick={handleCancel}
-          loading={isPending}
+          disabled={isPending || level !== "task"}
           variant="destructive"
           size="sm"
+          title={level !== "task" ? "Cancel available at task level only" : undefined}
         >
           {!isPending && <XCircle className="mr-2 h-4 w-4" />}
           Cancel

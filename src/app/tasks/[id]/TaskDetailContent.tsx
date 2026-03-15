@@ -14,6 +14,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { TaskComments } from "@/components/tasks";
 import { PatternEventRenderer } from "@/components/events";
 import { useDeleteTask } from "@/hooks/useTasks";
+import { RetryHistory } from "@/components/tasks/RetryHistory";
 import type { TaskSummary, Agent, Event } from "@/lib/supabase/types";
 
 interface TaskDetailContentProps {
@@ -311,6 +312,9 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           )}
         </CardContent>
       </Card>
+
+      {/* Retry History */}
+      <RetryHistory taskId={task.id} />
 
       {/* Event Log Card */}
       <Card>

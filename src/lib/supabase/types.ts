@@ -42,6 +42,9 @@ export type SprintStatus =
 
 export type TaskStatus =
   | "pending"
+  | "assigned"
+  | "in_progress"
+  | "checking"
   | "queued"
   | "running"
   | "validating"
@@ -50,7 +53,7 @@ export type TaskStatus =
   | "cancelled"
   | "deleted"
 
-export type ExecutionMode = "sequential" | "parallel" | "swarm" | "competitive"
+export type ExecutionMode = "sequential" | "swarm"
 
 export type PatternConfig = TournamentConfig | CascadeConfig | Record<string, unknown>
 
@@ -122,6 +125,8 @@ export interface Database {
           repo_url: string
           default_branch: string
           status: ProjectStatus
+          branch: string | null
+          pr_url: string | null
           metadata: Record<string, unknown>
           created_at: string
           updated_at: string
@@ -138,6 +143,8 @@ export interface Database {
           repo_url: string
           default_branch: string
           status: ProjectStatus
+          branch?: string | null
+          pr_url?: string | null
           metadata: Record<string, unknown>
           started_at?: string | null
           completed_at?: string | null
@@ -152,6 +159,8 @@ export interface Database {
           repo_url?: string
           default_branch?: string
           status?: ProjectStatus
+          branch?: string | null
+          pr_url?: string | null
           metadata?: Record<string, unknown>
           updated_at?: string
           started_at?: string | null
@@ -170,6 +179,8 @@ export interface Database {
           description: string | null
           order_index: number
           status: SprintStatus
+          branch: string | null
+          pr_url: string | null
           pattern: ExecutionPattern | null
           distribution: DistributionMode
           pattern_config: PatternConfig
@@ -187,6 +198,8 @@ export interface Database {
           description?: string | null
           order_index?: number
           status?: SprintStatus
+          branch?: string | null
+          pr_url?: string | null
           metadata?: Record<string, unknown>
           started_at?: string | null
           completed_at?: string | null
@@ -384,6 +397,8 @@ export interface Database {
           description: string
           repo_url: string
           status: ProjectStatus
+          branch: string | null
+          pr_url: string | null
           created_at: string
           updated_at: string
           completed_at: string | null
@@ -406,6 +421,8 @@ export interface Database {
           description: string | null
           order_index: number
           status: SprintStatus
+          branch: string | null
+          pr_url: string | null
           created_at: string
           updated_at: string
           completed_at: string | null
