@@ -295,6 +295,25 @@ export interface DeleteResponse {
   cascade_deleted?: Record<string, number>;
 }
 
+/** Response shape for agent execution summaries. */
+export interface AgentSummaryResponse {
+  id: string;
+  agent_id: string;
+  agent_role: string;
+  task_id: string;
+  sprint_id?: string;
+  started_at: string;
+  completed_at: string;
+  success: boolean;
+  summary: string;
+  files_modified?: string[];
+  key_decisions?: string[];
+  issues_encountered?: string[];
+  error?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
 // =============================================================================
 // Execution status types (manually maintained until generator includes them)
 // Source: wheelhouse/contract/api_shapes.py lines 211-253
@@ -341,4 +360,3 @@ export interface ExecutionStatusResponse {
   tasks?: TaskStatusDetail[];
   sprints?: SprintStatusDetail[];
 }
-

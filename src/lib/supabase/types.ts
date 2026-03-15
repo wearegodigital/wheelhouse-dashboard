@@ -387,6 +387,42 @@ export interface Database {
         Update: never
         Relationships: []
       }
+      agent_summaries: {
+        Row: {
+          id: string
+          agent_id: string
+          agent_role: string
+          task_id: string
+          sprint_id: string | null
+          started_at: string
+          completed_at: string
+          success: boolean
+          summary: string
+          files_modified: string[]
+          key_decisions: string[]
+          issues_encountered: string[]
+          error: string | null
+          metadata: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          agent_id: string
+          agent_role: string
+          task_id: string
+          sprint_id?: string | null
+          started_at?: string
+          completed_at?: string
+          success?: boolean
+          summary?: string
+          files_modified?: string[]
+          key_decisions?: string[]
+          issues_encountered?: string[]
+          error?: string | null
+          metadata?: Record<string, unknown>
+        }
+        Update: Partial<Database['public']['Tables']['agent_summaries']['Row']>
+        Relationships: []
+      }
     }
     Views: {
       project_summary: {
@@ -488,6 +524,7 @@ export type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"]
 export type TeamInvite = Database["public"]["Tables"]["team_invites"]["Row"]
 export type TaskComment = Database["public"]["Tables"]["task_comments"]["Row"]
 export type ActivityLog = Database["public"]["Tables"]["activity_log"]["Row"]
+export type AgentSummary = Database["public"]["Tables"]["agent_summaries"]["Row"]
 export type UserRole = "owner" | "admin" | "member" | "viewer"
 export type ActivityAction = "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"
 export type ActivityEntityType = "project" | "sprint" | "task" | "comment"

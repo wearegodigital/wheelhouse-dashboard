@@ -15,6 +15,8 @@ import { TaskComments } from "@/components/tasks";
 import { PatternEventRenderer } from "@/components/events";
 import { useDeleteTask } from "@/hooks/useTasks";
 import { RetryHistory } from "@/components/tasks/RetryHistory";
+import { useAgentSummaries } from "@/hooks/useAgentSummaries";
+import { AgentSummaryCard } from "@/components/tasks/AgentSummaryCard";
 import type { TaskSummary, Agent, Event } from "@/lib/supabase/types";
 
 interface TaskDetailContentProps {
@@ -31,6 +33,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteTask = useDeleteTask();
+  const { data: agentSummaries } = useAgentSummaries(task.id);
 
   // Real-time subscriptions for agents and events
   useEffect(() => {
@@ -251,6 +254,16 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           )}
         </CardContent>
       </Card>
+
+      {/* Agent Execution Summaries */}
+      {agentSummaries && agentSummaries.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">Agent Activity</h3>
+          {agentSummaries.map((s) => (
+            <AgentSummaryCard key={s.id} summary={s} />
+          ))}
+        </div>
+      )}
 
       {/* Agent Activity Card */}
       <Card>
