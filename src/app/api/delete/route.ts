@@ -43,7 +43,10 @@ export async function DELETE(request: NextRequest) {
 
       const response = await fetch(modalUrl, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.MODAL_API_KEY || ""}`,
+        },
       })
 
       const contentType = response.headers.get("content-type")

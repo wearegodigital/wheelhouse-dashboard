@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.MODAL_API_KEY || ""}`,
       },
       body: JSON.stringify(modalBody),
     })

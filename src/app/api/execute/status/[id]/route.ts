@@ -28,7 +28,10 @@ export async function GET(
   try {
     const response = await fetch(`${modalApiUrl}/execute/status/${id}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.MODAL_API_KEY || ""}`,
+      },
       cache: 'no-store',
     })
 

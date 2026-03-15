@@ -101,7 +101,10 @@ export async function POST(request: NextRequest) {
     const modalUrl = `${MODAL_API_URL}/${entityType}`
     const response = await fetch(modalUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.MODAL_API_KEY || ""}`,
+      },
       body: JSON.stringify(payload),
     })
 

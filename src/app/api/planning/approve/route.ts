@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
     // Forward recommendation as fallback in case DB save failed during streaming
     const modalResponse = await fetch(`${MODAL_API_URL}/planning/approve`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.MODAL_API_KEY || ""}`,
+      },
       body: JSON.stringify({
         conversationId,
         projectId,

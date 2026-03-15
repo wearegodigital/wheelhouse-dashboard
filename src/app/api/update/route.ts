@@ -91,6 +91,7 @@ export async function PUT(request: NextRequest) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.MODAL_API_KEY || ""}`,
       },
       body: JSON.stringify(payload),
     })
