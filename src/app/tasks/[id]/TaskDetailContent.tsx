@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { TaskComments } from "@/components/tasks";
 import { PatternEventRenderer } from "@/components/events";
@@ -256,6 +257,7 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
       </Card>
 
       {/* Agent Execution Summaries */}
+      <ErrorBoundary>
       {agentSummaries && agentSummaries.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium">Agent Activity</h3>
@@ -326,10 +328,13 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
         </CardContent>
       </Card>
 
+      </ErrorBoundary>
+
       {/* Retry History */}
       <RetryHistory taskId={task.id} />
 
       {/* Event Log Card */}
+      <ErrorBoundary>
       <Card>
         <CardHeader>
           <CardTitle>Event Log</CardTitle>
@@ -351,9 +356,12 @@ export function TaskDetailContent({ task, agents: initialAgents, events: initial
           )}
         </CardContent>
       </Card>
+      </ErrorBoundary>
 
       {/* Comments Section */}
+      <ErrorBoundary>
       <TaskComments taskId={task.id} />
+      </ErrorBoundary>
 
       <ConfirmationDialog
         open={showDeleteConfirm}

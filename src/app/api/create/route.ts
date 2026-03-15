@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-const MODAL_API_URL = process.env.MODAL_API_URL || ""
-
-
 type EntityType = "projects" | "sprints" | "tasks"
 
 interface CreateProjectBody {
@@ -37,6 +34,8 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     )
   }
+
+  const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
   if (!MODAL_API_URL) {
     console.error("MODAL_API_URL environment variable is not configured")

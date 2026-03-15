@@ -29,7 +29,8 @@ export function useTaskRetries(taskId: string | undefined) {
 
       if (error) throw error
 
-      return (data || []).map((event: any) => ({
+      type RetryEvent = { id: string; payload: Record<string, unknown> | null; created_at: string }
+      return ((data || []) as RetryEvent[]).map((event) => ({
         id: event.id,
         attempt: event.payload?.attempt || 1,
         max_attempts: event.payload?.max_attempts || 3,

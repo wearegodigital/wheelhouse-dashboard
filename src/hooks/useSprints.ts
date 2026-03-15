@@ -3,6 +3,19 @@ import { createClient } from '@/lib/supabase/client'
 import { deleteSprint as deleteSprintApi, createSprint as createSprintApi } from '@/lib/api/wheelhouse'
 import type { SprintSummary } from '@/lib/supabase/types'
 
+async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
+  const response = await fetch("/api/update", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id, ...data }),
+  })
+  const result = await response.json()
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Update failed")
+  }
+  return result
+}
+
 export function useSprints(projectId: string) {
   return useQuery({
     queryKey: ['sprints', projectId],
@@ -60,15 +73,7 @@ export function useUpdateSprint() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; status?: string; order_index?: number }) => {
-      const supabase = createClient()
-      const { data: sprint, error } = await supabase
-        .from("sprints")
-        .update(data as never)
-        .eq("id", id)
-        .select()
-        .single()
-      if (error) throw error
-      return sprint
+      return updateViaApi("sprints", id, data)
     },
     onSuccess: async (_, variables) => {
       // Get the sprint to find its project_id for cache invalidation

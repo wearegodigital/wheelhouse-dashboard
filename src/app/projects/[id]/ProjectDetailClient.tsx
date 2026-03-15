@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SprintList } from "@/components/sprints";
 import { PlanningChat } from "@/components/planning";
 import { useDeleteProject } from "@/hooks/useProjects";
 import { useExecutionStatus } from "@/hooks/useExecutionStatus";
+import { useToast } from "@/components/ui/toast";
 import { getStatusBadgeVariant } from "@/lib/status";
 import type { ProjectSummary } from "@/lib/supabase/types";
 
@@ -24,6 +26,7 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
   const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "planning">("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteProject = useDeleteProject();
+  const { addToast } = useToast();
 
   const isRunning = initialProject.status === "running";
   const { data: executionStatus } = useExecutionStatus(initialProject.id, isRunning);
@@ -41,8 +44,9 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message.includes("conflict") || message.includes("running")) {
-        alert("Cannot delete a running project. Please cancel execution first.");
+        addToast("Cannot delete a running project. Please cancel execution first.", "error");
       } else {
+        addToast("Failed to delete project.", "error");
         console.error("Failed to delete project:", error);
       }
     }
@@ -284,11 +288,15 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       )}
 
       {activeTab === "sprints" && (
-        <SprintList projectId={initialProject.id} />
+        <ErrorBoundary>
+          <SprintList projectId={initialProject.id} />
+        </ErrorBoundary>
       )}
 
       {activeTab === "planning" && (
-        <PlanningChat projectId={initialProject.id} />
+        <ErrorBoundary>
+          <PlanningChat projectId={initialProject.id} />
+        </ErrorBoundary>
       )}
 
       <ConfirmationDialog

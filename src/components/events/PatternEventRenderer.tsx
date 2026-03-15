@@ -1,7 +1,7 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Trophy, ArrowUp, CheckCircle, Users, GitMerge, Activity } from "lucide-react"
+import { Trophy, ArrowUp, Activity } from "lucide-react"
 import type { Event } from "@/lib/supabase/types"
 
 interface PatternEventRendererProps {

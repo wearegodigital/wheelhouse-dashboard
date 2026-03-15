@@ -4,6 +4,19 @@ import { deleteTask as deleteTaskApi, createTask as createTaskApi } from "@/lib/
 import { sanitizeSearch } from "@/lib/utils"
 import type { TaskSummary, TaskFilters } from "@/types"
 
+async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
+  const response = await fetch("/api/update", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id, ...data }),
+  })
+  const result = await response.json()
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Update failed")
+  }
+  return result
+}
+
 export function useTasks(filters?: TaskFilters) {
   return useQuery({
     queryKey: ["tasks", filters],
@@ -115,15 +128,7 @@ export function useUpdateTask() {
       mode?: string
       progress?: number
     }) => {
-      const supabase = createClient()
-      const { data: task, error } = await supabase
-        .from("tasks")
-        .update(data as never)
-        .eq("id", id)
-        .select()
-        .single()
-      if (error) throw error
-      return task
+      return updateViaApi("tasks", id, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })

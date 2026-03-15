@@ -4,6 +4,19 @@ import { deleteProject as deleteProjectApi, createProject as createProjectApi } 
 import { sanitizeSearch } from "@/lib/utils"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
+async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
+  const response = await fetch("/api/update", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id, ...data }),
+  })
+  const result = await response.json()
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Update failed")
+  }
+  return result
+}
+
 export function useProjects(filters?: ProjectFilters) {
   return useQuery({
     queryKey: ["projects", filters],
@@ -71,15 +84,7 @@ export function useUpdateProject() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; status?: string; repo_url?: string }) => {
-      const supabase = createClient()
-      const { data: project, error } = await supabase
-        .from("projects")
-        .update(data as never)
-        .eq("id", id)
-        .select()
-        .single()
-      if (error) throw error
-      return project
+      return updateViaApi("projects", id, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] })

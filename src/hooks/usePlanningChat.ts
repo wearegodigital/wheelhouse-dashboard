@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react"
+import { useReducer, useCallback, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { ChatMessage, DecompositionRecommendation } from "@/types"
 import {
@@ -51,35 +51,160 @@ interface PlanningMessage {
 
 const MAX_HISTORY_MESSAGES = 20 // Send last N messages for context
 
+// --- Reducer types ---
+
+interface PlanningState {
+  messages: ChatMessage[]
+  conversationId: string | null
+  isStreaming: boolean
+  isLoading: boolean
+  currentRecommendation: DecompositionRecommendation | null
+  currentPhase: ProgressPhase | null
+  session: PlanningSession | null
+  isReadyForApproval: boolean
+}
+
+type PlanningAction =
+  | { type: "SEND_MESSAGE"; payload: ChatMessage }
+  | { type: "RECEIVE_CHUNK"; payload: { messageId: string; content: string; recommendations?: DecompositionRecommendation } }
+  | { type: "SET_PHASE"; payload: ProgressPhase | null }
+  | { type: "SET_CONVERSATION_ID"; payload: { conversationId: string; session?: PlanningSession } }
+  | { type: "SET_RECOMMENDATIONS"; payload: DecompositionRecommendation }
+  | { type: "APPROVE_START" }
+  | { type: "APPROVE_COMPLETE" }
+  | { type: "ERROR"; payload: { assistantMessageId: string } }
+  | { type: "RESET" }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_STREAMING"; payload: boolean }
+  | { type: "SET_READY_FOR_APPROVAL"; payload: boolean }
+  | { type: "LOAD_CONVERSATION"; payload: { conversationId: string; messages: ChatMessage[]; recommendation: DecompositionRecommendation | null; session: PlanningSession } }
+  | { type: "SET_SESSION"; payload: PlanningSession | null }
+  | { type: "TOUCH_SESSION" }
+  | { type: "CLEAR_BACKEND_SESSION" }
+
+const initialState: PlanningState = {
+  messages: [],
+  conversationId: null,
+  isStreaming: false,
+  isLoading: true,
+  currentRecommendation: null,
+  currentPhase: null,
+  session: null,
+  isReadyForApproval: false,
+}
+
+function planningReducer(state: PlanningState, action: PlanningAction): PlanningState {
+  switch (action.type) {
+    case "SEND_MESSAGE":
+      return {
+        ...state,
+        messages: [...state.messages, action.payload],
+      }
+
+    case "RECEIVE_CHUNK": {
+      const { messageId, content, recommendations } = action.payload
+      return {
+        ...state,
+        messages: state.messages.map((m) =>
+          m.id === messageId
+            ? { ...m, content, ...(recommendations ? { recommendations } : {}) }
+            : m
+        ),
+        ...(recommendations ? { currentRecommendation: recommendations } : {}),
+      }
+    }
+
+    case "SET_PHASE":
+      return { ...state, currentPhase: action.payload }
+
+    case "SET_CONVERSATION_ID":
+      return {
+        ...state,
+        conversationId: action.payload.conversationId,
+        ...(action.payload.session ? { session: action.payload.session } : {}),
+      }
+
+    case "SET_RECOMMENDATIONS":
+      return { ...state, currentRecommendation: action.payload }
+
+    case "APPROVE_START":
+      return state
+
+    case "APPROVE_COMPLETE":
+      return state
+
+    case "ERROR":
+      return {
+        ...state,
+        messages: state.messages.filter((m) => m.id !== action.payload.assistantMessageId),
+        isStreaming: false,
+      }
+
+    case "RESET":
+      return {
+        ...state,
+        messages: [],
+        conversationId: null,
+        currentRecommendation: null,
+        isReadyForApproval: false,
+      }
+
+    case "SET_LOADING":
+      return { ...state, isLoading: action.payload }
+
+    case "SET_STREAMING":
+      return { ...state, isStreaming: action.payload }
+
+    case "SET_READY_FOR_APPROVAL":
+      return { ...state, isReadyForApproval: action.payload }
+
+    case "LOAD_CONVERSATION":
+      return {
+        ...state,
+        conversationId: action.payload.conversationId,
+        messages: action.payload.messages,
+        currentRecommendation: action.payload.recommendation,
+        session: action.payload.session,
+        isLoading: false,
+      }
+
+    case "SET_SESSION":
+      return { ...state, session: action.payload }
+
+    case "TOUCH_SESSION":
+      return {
+        ...state,
+        session: state.session ? touchSession(state.session) : null,
+      }
+
+    case "CLEAR_BACKEND_SESSION":
+      return {
+        ...state,
+        session: state.session ? { ...state.session, backendConversationId: null } : null,
+      }
+
+    default:
+      return state
+  }
+}
+
+// --- Hook ---
+
 export function usePlanningChat(options: UsePlanningChatOptions = {}) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [conversationId, setConversationId] = useState<string | null>(null)
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentRecommendation, setCurrentRecommendation] = useState<DecompositionRecommendation | null>(null)
-  const [currentPhase, setCurrentPhase] = useState<ProgressPhase | null>(null)
-  const [session, setSession] = useState<PlanningSession | null>(null)
-  const [isReadyForApproval, setIsReadyForApproval] = useState(false)
+  const [state, dispatch] = useReducer(planningReducer, initialState)
 
   const supabase = useMemo(() => createClient(), [])
-
-  // Helper to update a specific message by ID
-  const updateMessageById = useCallback((id: string, updates: Partial<ChatMessage>) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
-    )
-  }, [])
 
   // Load existing conversation on mount
   useEffect(() => {
     async function loadConversation() {
       if (!options.projectId && !options.sprintId) {
-        setIsLoading(false)
+        dispatch({ type: "SET_LOADING", payload: false })
         return
       }
 
       if (options.skipHistory) {
-        setIsLoading(false)
+        dispatch({ type: "SET_LOADING", payload: false })
         return
       }
 
@@ -100,9 +225,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         const { data: conversation } = await query.single<PlanningConversation>()
 
         if (conversation) {
-          setConversationId(conversation.id)
-          setSession(createSession(conversation.id))
-
           // Load messages for this conversation
           const { data: existingMessages } = await supabase
             .from("planning_messages")
@@ -111,29 +233,42 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
             .order("created_at", { ascending: true })
             .returns<PlanningMessage[]>()
 
+          let loadedMessages: ChatMessage[] = []
+          let recommendation: DecompositionRecommendation | null = null
+
           if (existingMessages && existingMessages.length > 0) {
-            const loadedMessages: ChatMessage[] = existingMessages.map((m: PlanningMessage) => ({
+            loadedMessages = existingMessages.map((m: PlanningMessage) => ({
               id: m.id,
               role: m.role as "user" | "orchestrator",
               content: m.content,
               recommendations: m.recommendations as DecompositionRecommendation | undefined,
               createdAt: m.created_at,
             }))
-            setMessages(loadedMessages)
 
             // Set current recommendation from last orchestrator message
             const lastOrchestratorMsg = [...loadedMessages]
               .reverse()
               .find((m) => m.role === "orchestrator" && m.recommendations)
             if (lastOrchestratorMsg?.recommendations) {
-              setCurrentRecommendation(lastOrchestratorMsg.recommendations)
+              recommendation = lastOrchestratorMsg.recommendations
             }
           }
+
+          dispatch({
+            type: "LOAD_CONVERSATION",
+            payload: {
+              conversationId: conversation.id,
+              messages: loadedMessages,
+              recommendation,
+              session: createSession(conversation.id),
+            },
+          })
+        } else {
+          dispatch({ type: "SET_LOADING", payload: false })
         }
       } catch (error) {
         console.error("Error loading conversation:", error)
-      } finally {
-        setIsLoading(false)
+        dispatch({ type: "SET_LOADING", payload: false })
       }
     }
 
@@ -143,43 +278,45 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
   // Fallback: if we have recommendations but no ready_for_approval signal,
   // assume ready after streaming completes (backward compatibility)
   useEffect(() => {
-    if (currentRecommendation && !isStreaming && !isReadyForApproval) {
-      const timer = setTimeout(() => setIsReadyForApproval(true), 1000)
+    if (state.currentRecommendation && !state.isStreaming && !state.isReadyForApproval) {
+      const timer = setTimeout(() => dispatch({ type: "SET_READY_FOR_APPROVAL", payload: true }), 1000)
       return () => clearTimeout(timer)
     }
-  }, [currentRecommendation, isStreaming, isReadyForApproval])
+  }, [state.currentRecommendation, state.isStreaming, state.isReadyForApproval])
 
   // Get existing conversation or create a temporary local ID.
   // The real conversation is created server-side by the backend
   // (Modal /planning/chat) which returns the conversation_id via SSE.
   const ensureConversation = useCallback(async (): Promise<string> => {
-    if (conversationId) return conversationId
+    if (state.conversationId) return state.conversationId
 
     // Use a temporary local ID until the backend returns the real one
     const tempId = crypto.randomUUID()
-    setConversationId(tempId)
-    setSession(createSession(tempId))
+    dispatch({
+      type: "SET_CONVERSATION_ID",
+      payload: { conversationId: tempId, session: createSession(tempId) },
+    })
     return tempId
-  }, [conversationId])
+  }, [state.conversationId])
 
   // Messages are saved server-side by the backend (Modal /planning/chat).
   // No direct Supabase writes needed from the dashboard.
 
   // Get history for context (last N messages)
   const getHistoryForContext = useCallback(() => {
-    return messages.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+    return state.messages.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
       role: m.role,
       content: m.content,
     }))
-  }, [messages])
+  }, [state.messages])
 
   const sendMessage = useCallback(
     async (content: string) => {
       // Touch session on message send
-      setSession(prev => prev ? touchSession(prev) : prev)
+      dispatch({ type: "TOUCH_SESSION" })
 
       // Ensure we have a conversation
-      const convId = await ensureConversation()
+      await ensureConversation()
 
       // Create user message
       const userMessage: ChatMessage = {
@@ -188,8 +325,8 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         content,
         createdAt: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, userMessage])
-      setIsStreaming(true)
+      dispatch({ type: "SEND_MESSAGE", payload: userMessage })
+      dispatch({ type: "SET_STREAMING", payload: true })
 
       // Create placeholder for assistant response
       const assistantMessage: ChatMessage = {
@@ -198,7 +335,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         content: "",
         createdAt: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, assistantMessage])
+      dispatch({ type: "SEND_MESSAGE", payload: assistantMessage })
 
       try {
         const history = getHistoryForContext()
@@ -208,7 +345,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             // Send backend session ID if we have it, otherwise null for new session
-            conversationId: session?.backendConversationId || null,
+            conversationId: state.session?.backendConversationId || null,
             message: content,
             history, // Include conversation history
             projectId: options.projectId,
@@ -223,11 +360,11 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           // Handle specific error codes
           if (response.status === 404) {
             // Session expired - clear backend ID and could retry
-            setSession(prev => prev ? { ...prev, backendConversationId: null } : prev)
+            dispatch({ type: "CLEAR_BACKEND_SESSION" })
           }
 
-          setIsStreaming(false)
-          setIsLoading(false)
+          dispatch({ type: "SET_STREAMING", payload: false })
+          dispatch({ type: "SET_LOADING", payload: false })
           throw new Error(`Planning API error: ${response.status}`)
         }
 
@@ -239,7 +376,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         let fullContent = ""
         let recommendations: DecompositionRecommendation | undefined
         let buffer = "" // Buffer for incomplete SSE chunks
-        let savedToDb = false // Track if we already saved to avoid duplicates
 
         while (true) {
           const { done, value } = await reader.read()
@@ -249,12 +385,12 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           buffer += decoder.decode(value, { stream: true })
 
           // Process complete SSE messages (separated by double newline)
-          const messages = buffer.split("\n\n")
+          const sseMessages = buffer.split("\n\n")
           // Keep the last potentially incomplete message in buffer
-          buffer = messages.pop() || ""
+          buffer = sseMessages.pop() || ""
 
-          for (const message of messages) {
-            for (const line of message.split("\n")) {
+          for (const sseMessage of sseMessages) {
+            for (const line of sseMessage.split("\n")) {
               const data = parseSSEData(line)
               if (data) {
                 try {
@@ -262,26 +398,36 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                 // Capture backend conversation_id from first SSE event
                 if (data.conversation_id) {
                   console.log('[Planning] Received backend conversation_id:', data.conversation_id)
-                  setConversationId(data.conversation_id as string)
-                  setSession(prev => prev && !prev.backendConversationId ? setBackendConversationId(prev, data.conversation_id as string) : prev)
+                  const backendId = data.conversation_id as string
+                  dispatch({
+                    type: "SET_CONVERSATION_ID",
+                    payload: { conversationId: backendId },
+                  })
+                  // Set backend conversation ID on session if not already set
+                  dispatch({
+                    type: "SET_SESSION",
+                    payload: state.session && !state.session.backendConversationId
+                      ? setBackendConversationId(state.session, backendId)
+                      : state.session,
+                  })
                 }
 
                 // Handle progress phase updates
                 if (data.phase) {
-                  setSession(prev => {
-                    const sessionAwarePhase = getSessionAwarePhase(data.phase as string, prev)
-                    setCurrentPhase({
+                  const sessionAwarePhase = getSessionAwarePhase(data.phase as string, state.session)
+                  dispatch({
+                    type: "SET_PHASE",
+                    payload: {
                       phase: sessionAwarePhase,
                       message: (data.message as string) || "",
                       icon: (data.icon as string) || "spinner",
                       elapsed: data.elapsed as number | undefined,
-                    })
-                    // Touch session on any activity
-                    return prev ? touchSession(prev) : prev
+                    },
                   })
+                  dispatch({ type: "TOUCH_SESSION" })
                   // Clear phase when complete
                   if (data.phase === "completed") {
-                    setTimeout(() => setCurrentPhase(null), 1000)
+                    setTimeout(() => dispatch({ type: "SET_PHASE", payload: null }), 1000)
                   }
                 }
 
@@ -289,25 +435,30 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
                 const textChunk = data.content || data.chunk
                 if (textChunk) {
                   // Clear phase once we start receiving content
-                  setCurrentPhase(null)
+                  dispatch({ type: "SET_PHASE", payload: null })
                   fullContent += textChunk as string
-                  updateMessageById(assistantMessage.id, { content: fullContent })
+                  dispatch({
+                    type: "RECEIVE_CHUNK",
+                    payload: { messageId: assistantMessage.id, content: fullContent },
+                  })
                 }
 
                 // Check if orchestrator signals ready for approval
                 if (data.ready_for_approval === true) {
-                  setIsReadyForApproval(true)
+                  dispatch({ type: "SET_READY_FOR_APPROVAL", payload: true })
                 }
 
                 if (data.recommendations) {
                   recommendations = data.recommendations as DecompositionRecommendation
-                  setCurrentRecommendation(recommendations)
-                  updateMessageById(assistantMessage.id, { recommendations })
+                  dispatch({ type: "SET_RECOMMENDATIONS", payload: recommendations })
+                  dispatch({
+                    type: "RECEIVE_CHUNK",
+                    payload: { messageId: assistantMessage.id, content: fullContent, recommendations },
+                  })
                 }
 
                 if (data.done) {
                   // Backend has already saved the message to Supabase
-                  savedToDb = true
                 }
                 } catch {
                   // Skip invalid JSON
@@ -332,18 +483,17 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       } catch (error) {
         console.error("Error sending message:", error)
         // Remove the failed assistant message
-        setMessages((prev) => prev.filter((m) => m.id !== assistantMessage.id))
+        dispatch({ type: "ERROR", payload: { assistantMessageId: assistantMessage.id } })
       } finally {
-        setIsStreaming(false)
+        dispatch({ type: "SET_STREAMING", payload: false })
       }
     },
     [
       ensureConversation,
       getHistoryForContext,
-      updateMessageById,
       options.projectId,
       options.sprintId,
-      session,
+      state.session,
     ]
   )
 
@@ -354,22 +504,26 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       message?: string
     }
   } | undefined> => {
-    if (!currentRecommendation || !conversationId) return
+    if (!state.currentRecommendation || !state.conversationId) return
+
+    dispatch({ type: "APPROVE_START" })
 
     const response = await fetch("/api/planning/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        conversationId: session?.backendConversationId,  // Backend session ID
-        supabaseConversationId: conversationId,          // Local DB record ID
+        conversationId: state.session?.backendConversationId,  // Backend session ID
+        supabaseConversationId: state.conversationId,          // Local DB record ID
         projectId: options.projectId,
         sprintId: options.sprintId,
-        recommendation: currentRecommendation,
+        recommendation: state.currentRecommendation,
       }),
     })
 
     const result = await response.json()
-    options.onApprove?.(currentRecommendation)
+    options.onApprove?.(state.currentRecommendation)
+
+    dispatch({ type: "APPROVE_COMPLETE" })
 
     return {
       projectId: result.projectId || options.projectId,
@@ -380,27 +534,24 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
           : `${result.verification.successful}/${result.verification.total} entities synced. Some may still be syncing.`
       } : undefined
     }
-  }, [currentRecommendation, conversationId, options, session])
+  }, [state.currentRecommendation, state.conversationId, state.session, options])
 
   const reset = useCallback(async () => {
     // TODO: call backend API to mark conversation as abandoned if needed
-    setMessages([])
-    setConversationId(null)
-    setCurrentRecommendation(null)
-    setIsReadyForApproval(false)
+    dispatch({ type: "RESET" })
   }, [])
 
   return {
-    messages,
-    isStreaming,
-    isLoading,
-    currentRecommendation,
-    currentPhase,
-    session,
-    isReadyForApproval,
+    messages: state.messages,
+    isStreaming: state.isStreaming,
+    isLoading: state.isLoading,
+    currentRecommendation: state.currentRecommendation,
+    currentPhase: state.currentPhase,
+    session: state.session,
+    isReadyForApproval: state.isReadyForApproval,
     sendMessage,
     approveRecommendation,
     reset,
-    conversationId,
+    conversationId: state.conversationId,
   }
 }

@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { PatternSelector } from "@/components/execution/PatternSelector";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { TaskList } from "@/components/tasks/TaskList";
 import type { SprintSummary } from "@/lib/supabase/types";
 import { useDeleteSprint } from "@/hooks/useSprints";
 import { useExecutionStatus } from "@/hooks/useExecutionStatus";
+import { useToast } from "@/components/ui/toast";
 import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant, getDistributionBadgeText, getDistributionBadgeVariant } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +43,7 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteSprint = useDeleteSprint();
+  const { addToast } = useToast();
 
   const isRunning = sprint.status === "running";
   const { data: executionStatus } = useExecutionStatus(sprint.id, isRunning);
@@ -55,8 +58,9 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message.includes("conflict") || message.includes("running")) {
-        alert("Cannot delete a running sprint. Please cancel execution first.");
+        addToast("Cannot delete a running sprint. Please cancel execution first.", "error");
       } else {
+        addToast("Failed to delete sprint.", "error");
         console.error("Failed to delete sprint:", error);
       }
     }
@@ -208,6 +212,7 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
       </div>
 
       {/* Execution Progress */}
+      <ErrorBoundary>
       {isRunning && executionStatus && (
         <Card>
           <CardHeader>
@@ -287,6 +292,7 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
           </CardContent>
         </Card>
       )}
+      </ErrorBoundary>
 
       {/* Sprint Timeline */}
       {(sprint.created_at || sprint.completed_at) && (
@@ -352,10 +358,12 @@ export function SprintDetailClient({ sprint }: SprintDetailClientProps) {
       </Card>
 
       {/* Tasks Section */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-4">Tasks</h2>
-        <TaskList filters={{ sprintId: sprint.id }} />
-      </div>
+      <ErrorBoundary>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight mb-4">Tasks</h2>
+          <TaskList filters={{ sprintId: sprint.id }} />
+        </div>
+      </ErrorBoundary>
 
       <ConfirmationDialog
         open={showDeleteConfirm}
