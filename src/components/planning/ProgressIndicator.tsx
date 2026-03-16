@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { ProgressPhase } from "@/hooks/usePlanningChat"
 import { cn } from "@/lib/utils"
 import { getStatusMessage, shouldEnhanceMessage } from "@/lib/status-messages"
@@ -43,43 +43,32 @@ interface ProgressIndicatorProps {
 
 export function ProgressIndicator({ phase, className }: ProgressIndicatorProps) {
   const [dotCount, setDotCount] = useState(0)
-  const [messageIndex, setMessageIndex] = useState(0)
+  const [tick, setTick] = useState(0)
   const isComplete = phase.phase === "completed"
 
-  // Track phase-specific start time - updates when phase changes
-  const [phaseKey, setPhaseKey] = useState(phase.phase)
-  const [startTime, setStartTime] = useState(0)
-
-  // Reset startTime and messageIndex when phase changes
-  useEffect(() => {
-    if (phase.phase !== phaseKey) {
-      setPhaseKey(phase.phase)
-      setStartTime(Date.now())
-      setMessageIndex(0)
-    }
-  }, [phase.phase, phaseKey])
-
-  // Cycle messages every 5 seconds and animate dots
+  // Cycle message tick every 5 seconds and animate dots
   useEffect(() => {
     if (isComplete) return
 
-    const messageInterval = setInterval(() => setMessageIndex((prev) => prev + 1), 5000)
+    const messageInterval = setInterval(() => setTick((prev) => prev + 1), 5000)
     const dotInterval = setInterval(() => setDotCount((prev) => (prev >= 3 ? 0 : prev + 1)), 500)
 
     return () => {
       clearInterval(messageInterval)
       clearInterval(dotInterval)
-      setDotCount(0)
     }
   }, [isComplete, phase.phase])
 
+  // Pure derivation: compute display message from props + tick state
+  const displayMessage = useMemo(() => {
+    if (shouldEnhanceMessage(phase.phase, phase.message)) {
+      return getStatusMessage(phase.phase, tick * 5000)
+    }
+    return phase.message
+  }, [phase.phase, phase.message, tick])
+
   // Derive dots string from count
   const dots = isComplete ? "" : ".".repeat(dotCount)
-
-  // Get enhanced message if Modal sent generic phase name
-  const displayMessage = shouldEnhanceMessage(phase.phase, phase.message)
-    ? getStatusMessage(phase.phase, startTime + messageIndex * 5000)
-    : phase.message
 
   const IconComponent = iconMap[phase.icon] || Loader2
   const colorClass = phaseColors[phase.phase] || "text-muted-foreground"
