@@ -17,6 +17,7 @@ export function getStatusBadgeVariant(status: string): BadgeVariant {
       return "default"
     case "failed":
     case "cancelled":
+    case "blocked":
       return "destructive"
     case "ready":
     case "checking":

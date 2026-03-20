@@ -18,6 +18,7 @@ import {
   Ban,
   PlayCircle,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react"
 import { getStatusBadgeVariant, getPatternBadgeText, getPatternBadgeVariant } from "@/lib/status"
 
@@ -34,6 +35,8 @@ function getStatusIcon(status: string) {
       return <XCircle className="h-4 w-4" />
     case "cancelled":
       return <Ban className="h-4 w-4" />
+    case "blocked":
+      return <AlertTriangle className="h-4 w-4 text-destructive" />
     case "running":
       return <PlayCircle className="h-4 w-4" />
     case "validating":
@@ -163,6 +166,8 @@ export function TaskList({ filters, className }: TaskListProps) {
                   task.status === "completed"
                     ? "bg-green-500"
                     : task.status === "failed"
+                    ? "bg-red-500"
+                    : task.status === "blocked"
                     ? "bg-red-500"
                     : "bg-primary"
                 )}

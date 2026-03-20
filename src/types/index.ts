@@ -13,6 +13,23 @@ export type {
   TaskStatusDetail,
   SprintStatusDetail,
   ExecutionStatusResponse,
+  // Blocker types
+  BlockerInputSchema,
+  BlockerListItem,
+  CreateBlockerRequest,
+  CreateBlockerResponse,
+  ResolveBlockerRequest,
+  ResolveBlockerResponse,
+  // Planning types
+  PlanningDeclineRequest,
+  PlanningDeclineResponse,
+  CreateProjectRequest,
+  // Enum string unions
+  BlockerStatus,
+  BlockerType,
+  BlockerInputType,
+  PlanningRigor,
+  TaskGranularity,
 } from "@/contract/wheelhouse-contract"
 
 // Import specific types for use in this file
@@ -69,6 +86,8 @@ export interface TaskFilters {
 export interface ProjectFilters {
   status?: import("@/lib/supabase/types").ProjectStatus
   search?: string
+  client_id?: string
+  repo_id?: string
 }
 
 // Pagination

@@ -38,6 +38,7 @@ export type SprintStatus =
   | "completed"
   | "cancelled"
   | "failed"
+  | "blocked"
   | "deleted"
 
 export type TaskStatus =
@@ -51,6 +52,7 @@ export type TaskStatus =
   | "completed"
   | "failed"
   | "cancelled"
+  | "blocked"
   | "deleted"
 
 export type ExecutionMode = "sequential" | "swarm"
@@ -118,6 +120,9 @@ export interface Database {
         Row: {
           id: string
           source_id: string | null  // Original Modal ID for API calls
+          client_id: string | null
+          repo_id: string | null
+          notion_id: string | null
           team_id: string | null
           created_by: string | null
           name: string
@@ -136,6 +141,9 @@ export interface Database {
           deleted_by: string | null
         }
         Insert: {
+          client_id?: string | null
+          repo_id?: string | null
+          notion_id?: string | null
           team_id?: string | null
           created_by?: string | null
           name: string
@@ -152,6 +160,9 @@ export interface Database {
           deleted_by?: string | null
         }
         Update: {
+          client_id?: string | null
+          repo_id?: string | null
+          notion_id?: string | null
           team_id?: string | null
           created_by?: string | null
           name?: string
@@ -217,6 +228,7 @@ export interface Database {
         Row: {
           id: string
           source_id: string | null  // Original Modal ID for API calls
+          notion_id: string | null
           team_id: string | null
           created_by: string | null
           project_id: string | null
@@ -246,6 +258,7 @@ export interface Database {
           deleted_by: string | null
         }
         Insert: {
+          notion_id?: string | null
           team_id?: string | null
           created_by?: string | null
           project_id?: string | null
@@ -387,6 +400,62 @@ export interface Database {
         Update: never
         Relationships: []
       }
+      clients: {
+        Row: {
+          id: string
+          name: string
+          notion_id: string | null
+          status: string
+          client_type: string
+          contact_email: string | null
+          contact_phone: string | null
+          metadata: Record<string, unknown>
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          name: string
+          notion_id?: string | null
+          status?: string
+          client_type?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          metadata?: Record<string, unknown>
+        }
+        Update: Partial<Omit<Database["public"]["Tables"]["clients"]["Row"], "id">>
+        Relationships: []
+      }
+      repos: {
+        Row: {
+          id: string
+          client_id: string | null
+          name: string
+          github_org: string
+          github_repo: string
+          default_branch: string
+          repo_url: string
+          description: string
+          metadata: Record<string, unknown>
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          name: string
+          client_id?: string | null
+          github_org?: string
+          github_repo?: string
+          default_branch?: string
+          repo_url?: string
+          description?: string
+          metadata?: Record<string, unknown>
+        }
+        Update: Partial<Omit<Database["public"]["Tables"]["repos"]["Row"], "id">>
+        Relationships: []
+      }
       agent_summaries: {
         Row: {
           id: string
@@ -423,6 +492,101 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['agent_summaries']['Row']>
         Relationships: []
       }
+      notion_tasks: {
+        Row: {
+          id: string
+          notion_page_id: string
+          title: string
+          status: string
+          priority: string
+          task_type: string
+          client_name: string
+          project_name: string
+          due_date: string | null
+          estimated_time: number | null
+          wheelhouse_task_id: string | null
+          content_blocks: unknown
+          image_urls: string[]
+          notion_created_at: string | null
+          notion_last_edited: string | null
+          synced_at: string
+          missing_since: string | null
+          consecutive_misses: number
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          notion_page_id: string
+          title?: string
+          status?: string
+          priority?: string
+          task_type?: string
+        }
+        Update: Partial<Omit<Database["public"]["Tables"]["notion_tasks"]["Row"], "id">>
+        Relationships: []
+      }
+      context_attachments: {
+        Row: {
+          id: string
+          client_id: string | null
+          repo_id: string | null
+          project_id: string | null
+          sprint_id: string | null
+          task_id: string | null
+          type: string
+          title: string
+          description: string
+          url: string | null
+          notion_page_id: string | null
+          mime_type: string | null
+          file_size_bytes: number | null
+          ai_context_summary: string | null
+          storage_path: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          type: string
+          title?: string
+          description?: string
+          client_id?: string | null
+          repo_id?: string | null
+          project_id?: string | null
+          sprint_id?: string | null
+          task_id?: string | null
+          url?: string | null
+          notion_page_id?: string | null
+          mime_type?: string | null
+          storage_path?: string | null
+        }
+        Update: Partial<Omit<Database["public"]["Tables"]["context_attachments"]["Row"], "id">>
+        Relationships: []
+      }
+      project_notion_links: {
+        Row: {
+          id: string
+          project_id: string
+          notion_page_id: string
+          notion_task_id: string | null
+          role: string
+          title: string
+          url: string | null
+          created_at: string
+        }
+        Insert: {
+          project_id: string
+          notion_page_id: string
+          notion_task_id?: string | null
+          role?: string
+          title?: string
+          url?: string | null
+        }
+        Update: Partial<Omit<Database["public"]["Tables"]["project_notion_links"]["Row"], "id">>
+        Relationships: []
+      }
     }
     Views: {
       project_summary: {
@@ -444,8 +608,13 @@ export interface Database {
           sprints_completed: number
           task_count: number
           tasks_completed: number
+          client_id: string | null
+          repo_id: string | null
+          notion_id: string | null
           deleted_at: string | null
           deleted_by: string | null
+          planning_rigor: string | null
+          task_granularity: string | null
         }
         Relationships: []
       }
@@ -525,6 +694,11 @@ export type TeamInvite = Database["public"]["Tables"]["team_invites"]["Row"]
 export type TaskComment = Database["public"]["Tables"]["task_comments"]["Row"]
 export type ActivityLog = Database["public"]["Tables"]["activity_log"]["Row"]
 export type AgentSummary = Database["public"]["Tables"]["agent_summaries"]["Row"]
+export type Client = Database["public"]["Tables"]["clients"]["Row"]
+export type Repo = Database["public"]["Tables"]["repos"]["Row"]
+export type NotionTaskRow = Database["public"]["Tables"]["notion_tasks"]["Row"]
+export type ContextAttachment = Database["public"]["Tables"]["context_attachments"]["Row"]
+export type ProjectNotionLink = Database["public"]["Tables"]["project_notion_links"]["Row"]
 export type UserRole = "owner" | "admin" | "member" | "viewer"
 export type ActivityAction = "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"
 export type ActivityEntityType = "project" | "sprint" | "task" | "comment"

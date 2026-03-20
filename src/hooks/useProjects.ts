@@ -1,21 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import { deleteProject as deleteProjectApi, createProject as createProjectApi } from "@/lib/api/wheelhouse"
+import { deleteProject as deleteProjectApi, createProject as createProjectApi, updateEntity } from "@/lib/api/wheelhouse"
 import { sanitizeSearch } from "@/lib/utils"
 import type { ProjectSummary, ProjectFilters } from "@/types"
 
-async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
-  const response = await fetch("/api/update", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, id, ...data }),
-  })
-  const result = await response.json()
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Update failed")
-  }
-  return result
-}
 
 export function useProjects(filters?: ProjectFilters) {
   return useQuery({
@@ -25,6 +13,7 @@ export function useProjects(filters?: ProjectFilters) {
       let query = supabase
         .from("project_summary")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
 
       if (filters?.status) {
@@ -35,6 +24,12 @@ export function useProjects(filters?: ProjectFilters) {
         if (search) {
           query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
         }
+      }
+      if (filters?.client_id) {
+        query = query.eq("client_id", filters.client_id)
+      }
+      if (filters?.repo_id) {
+        query = query.eq("repo_id", filters.repo_id)
       }
 
       const { data, error } = await query
@@ -66,7 +61,7 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { name: string; description?: string; repo_url?: string }) => {
+    mutationFn: async (data: { name: string; description?: string; repo_url?: string; client_id?: string; repo_id?: string; notion_id?: string; default_branch?: string; planning_rigor?: string; task_granularity?: string }) => {
       const result = await createProjectApi(data)
       if (!result.success) {
         throw new Error(result.message || "Failed to create project")
@@ -84,7 +79,7 @@ export function useUpdateProject() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; status?: string; repo_url?: string }) => {
-      return updateViaApi("projects", id, data)
+      return updateEntity("projects", id, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] })

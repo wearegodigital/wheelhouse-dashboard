@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Timer, CheckCircle2 } from "lucide-react"
+import { Timer, CheckCircle2, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ProgressBar } from "@/components/ui/progress-bar"
@@ -19,7 +19,7 @@ export function SprintCard({ sprint }: SprintCardProps) {
 
   return (
     <Link href={`/sprints/${sprint.id}`}>
-      <Card className="hover:shadow-md transition-all duration-300 cursor-pointer h-full group [.cyberpunk_&]:hover:shadow-[0_0_12px_hsl(var(--primary)/0.4),0_0_24px_hsl(var(--primary)/0.2),inset_0_0_8px_hsl(var(--primary)/0.1)] [.cyberpunk_&]:hover:border-primary [.cyberpunk_&]:hover:scale-[1.02]">
+      <Card className={`hover:shadow-md transition-all duration-300 cursor-pointer h-full group [.cyberpunk_&]:hover:shadow-[0_0_12px_hsl(var(--primary)/0.4),0_0_24px_hsl(var(--primary)/0.2),inset_0_0_8px_hsl(var(--primary)/0.1)] [.cyberpunk_&]:hover:border-primary [.cyberpunk_&]:hover:scale-[1.02]${sprint.status === "blocked" ? " border-destructive/50" : ""}`}>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -59,6 +59,12 @@ export function SprintCard({ sprint }: SprintCardProps) {
                   <span>
                     <span className="font-medium text-blue-500 [.cyberpunk_&]:text-primary [.cyberpunk_&]:drop-shadow-[0_0_3px_hsl(var(--primary)/0.7)] [.cyberpunk_&]:animate-[pulse_1s_ease-in-out_infinite]">{sprint.tasks_running}</span> running
                   </span>
+                </div>
+              )}
+              {sprint.status === "blocked" && (
+                <div className="flex items-center gap-2 col-span-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <span className="text-destructive text-sm font-medium">Blocked</span>
                 </div>
               )}
             </div>

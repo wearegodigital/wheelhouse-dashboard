@@ -24,7 +24,7 @@ export interface CreateResponse {
   error?: string
 }
 
-type EntityType = "projects" | "sprints" | "tasks"
+type EntityType = "projects" | "sprints" | "tasks" | "clients" | "repos"
 
 // =============================================================================
 // DELETE Operations
@@ -98,11 +98,61 @@ async function createEntity(
   return result
 }
 
+// =============================================================================
+// UPDATE Operations
+// =============================================================================
+
+export async function updateEntity(type: EntityType, id: string, data: Record<string, unknown>) {
+  const response = await fetch("/api/update", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, id, ...data }),
+  })
+  const result = await response.json()
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Update failed")
+  }
+  return result
+}
+
+// =============================================================================
+// CREATE Operations (entity-specific)
+// =============================================================================
+
 export const createProject = (data: {
   name: string
   description?: string
   repo_url?: string
+  default_branch?: string
+  client_id?: string
+  repo_id?: string
+  notion_id?: string
+  planning_rigor?: string
+  task_granularity?: string
 }) => createEntity("projects", data)
+
+export const createClient = (data: {
+  name: string
+  status?: string
+  client_type?: string
+  notion_id?: string
+  contact_email?: string
+  contact_phone?: string
+}) => createEntity("clients", data)
+
+export const deleteClient = (id: string, cascade = true) => deleteEntity("clients", id, cascade)
+
+export const createRepo = (data: {
+  name: string
+  client_id?: string
+  github_org?: string
+  github_repo?: string
+  default_branch?: string
+  repo_url?: string
+  description?: string
+}) => createEntity("repos", data)
+
+export const deleteRepo = (id: string) => deleteEntity("repos", id)
 
 export const createSprint = (data: {
   project_id: string

@@ -1,20 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
-import { deleteSprint as deleteSprintApi, createSprint as createSprintApi } from '@/lib/api/wheelhouse'
+import { deleteSprint as deleteSprintApi, createSprint as createSprintApi, updateEntity } from '@/lib/api/wheelhouse'
 import type { SprintSummary } from '@/lib/supabase/types'
 
-async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
-  const response = await fetch("/api/update", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, id, ...data }),
-  })
-  const result = await response.json()
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Update failed")
-  }
-  return result
-}
 
 export function useSprints(projectId: string) {
   return useQuery({
@@ -73,7 +61,7 @@ export function useUpdateSprint() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; status?: string; order_index?: number }) => {
-      return updateViaApi("sprints", id, data)
+      return updateEntity("sprints", id, data)
     },
     onSuccess: async (_, variables) => {
       // Get the sprint to find its project_id for cache invalidation

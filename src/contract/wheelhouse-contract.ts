@@ -2,13 +2,13 @@
 // DO NOT EDIT - regenerate with: python -m wheelhouse.contract.generate
 
 /** Task lifecycle status. */
-export type TaskStatus = "pending" | "assigned" | "in_progress" | "checking" | "completed" | "failed";
+export type TaskStatus = "pending" | "assigned" | "in_progress" | "checking" | "blocked" | "completed" | "failed";
 
 /** Project lifecycle status. */
 export type ProjectStatus = "draft" | "planning" | "ready" | "running" | "completed" | "failed" | "cancelled";
 
 /** Sprint lifecycle status. */
-export type SprintStatus = "draft" | "ready" | "running" | "completed" | "failed" | "cancelled";
+export type SprintStatus = "draft" | "ready" | "running" | "blocked" | "completed" | "failed" | "cancelled";
 
 /** Per-task execution strategy. */
 export type ExecutionPattern = "sequential" | "tournament" | "cascade";
@@ -24,6 +24,21 @@ export type SessionState = "initializing" | "active" | "idle" | "expired";
 
 /** Planning conversation status. */
 export type PlanningStatus = "active" | "approved" | "rejected" | "cancelled";
+
+/** Blocker lifecycle status. */
+export type BlockerStatus = "open" | "resolved" | "dismissed";
+
+/** How the blocker was created. */
+export type BlockerType = "planned" | "discovered";
+
+/** Type of human input required to resolve. */
+export type BlockerInputType = "secret" | "text" | "choice";
+
+/** How much planning rigor to apply. */
+export type PlanningRigor = "delegate" | "review" | "collaborate";
+
+/** How atomic tasks should be in decomposition. */
+export type TaskGranularity = "coarse" | "standard" | "fine" | "atomic" | "custom";
 
 /** A success criterion for a task. */
 export interface Criterion {
@@ -162,6 +177,11 @@ export interface ProjectListItem {
   name: string;
   description: string;
   status: ProjectStatus;
+  client_id?: string;
+  repo_id?: string;
+  notion_id?: string;
+  planning_rigor?: string;
+  task_granularity?: string;
   created_at?: string;
 }
 
@@ -171,6 +191,12 @@ export interface ProjectDetail {
   name: string;
   description: string;
   status: ProjectStatus;
+  client_id?: string;
+  repo_id?: string;
+  notion_id?: string;
+  planning_rigor?: string;
+  task_granularity?: string;
+  granularity_instructions?: string;
   repo_url?: string;
   default_branch?: string;
   created_at?: string;
@@ -202,6 +228,8 @@ export interface TaskListItem {
   sprint_id?: string;
   execution_pattern?: ExecutionPattern;
   distribution_mode?: DistributionMode;
+  blocker_count?: number;
+  has_open_blockers?: boolean;
 }
 
 /** Shape for POST /execute request body. */
@@ -250,6 +278,8 @@ export interface PlanningApproveResponse {
   project_id?: string;
   sprint_ids?: string[];
   task_ids?: string[];
+  blocker_ids?: string[];
+  blockers_created?: number;
   actions_taken?: ActionTaken[];
   message?: string;
 }
@@ -314,12 +344,6 @@ export interface AgentSummaryResponse {
   created_at: string;
 }
 
-// =============================================================================
-// Execution status types (manually maintained until generator includes them)
-// Source: wheelhouse/contract/api_shapes.py lines 211-253
-// NOTE: Re-add these after each contract sync until the generator is updated
-// =============================================================================
-
 /** Task summary within execution status response. */
 export interface TaskStatusDetail {
   id: string;
@@ -329,6 +353,7 @@ export interface TaskStatusDetail {
   pattern?: string;
   error?: string;
   pr_url?: string;
+  blocker_count?: number;
 }
 
 /** Sprint summary within execution status response. */
@@ -342,7 +367,7 @@ export interface SprintStatusDetail {
 /** Shape for GET /execute/status/{entity_id} response. */
 export interface ExecutionStatusResponse {
   success: boolean;
-  type: "task" | "sprint" | "project";
+  type: string;
   id: string;
   status: string;
   progress?: number;
@@ -357,6 +382,217 @@ export interface ExecutionStatusResponse {
   total_tasks?: number;
   completed_tasks?: number;
   running_tasks?: number;
+  blocked_tasks?: number;
+  open_blockers?: number;
   tasks?: TaskStatusDetail[];
   sprints?: SprintStatusDetail[];
 }
+
+/** Shape returned by GET /clients (each item in the clients array). */
+export interface ClientListItem {
+  id: string;
+  name: string;
+  status: string;
+  client_type: string;
+  notion_id?: string;
+  contact_email?: string;
+  created_at?: string;
+}
+
+/** Shape returned by GET /clients/{id}. */
+export interface ClientDetail {
+  id: string;
+  name: string;
+  status: string;
+  client_type: string;
+  notion_id?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Response shape for POST /clients. */
+export interface CreateClientResponse {
+  success: boolean;
+  client_id: string;
+  message: string;
+}
+
+/** Shape returned by GET /repos (each item in the repos array). */
+export interface RepoListItem {
+  id: string;
+  client_id?: string;
+  name: string;
+  github_org: string;
+  github_repo: string;
+  default_branch?: string;
+  repo_url?: string;
+  created_at?: string;
+}
+
+/** Shape returned by GET /repos/{id}. */
+export interface RepoDetail {
+  id: string;
+  client_id?: string;
+  name: string;
+  github_org: string;
+  github_repo: string;
+  default_branch?: string;
+  repo_url?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Response shape for POST /repos. */
+export interface CreateRepoResponse {
+  success: boolean;
+  repo_id: string;
+  message: string;
+}
+
+/** Shape for a single Notion task row from Supabase cache. */
+export interface NotionTaskResponse {
+  id: string;
+  notion_page_id: string;
+  title: string;
+  status: string;
+  priority?: string;
+  task_type?: string;
+  client_name?: string;
+  project_name?: string;
+  due_date?: string;
+  estimated_time?: number;
+  wheelhouse_task_id?: string;
+  notion_created_at?: string;
+  notion_last_edited?: string;
+  synced_at?: string;
+  created_at?: string;
+}
+
+/** Shape for POST /notion/sync response. */
+export interface NotionSyncResponse {
+  synced: number;
+  errors?: number;
+  missing_marked: number;
+  timestamp: string;
+}
+
+export interface ContextAttachmentResponse {
+  id: string;
+  client_id?: string;
+  repo_id?: string;
+  project_id?: string;
+  sprint_id?: string;
+  task_id?: string;
+  type: string;
+  title: string;
+  description?: string;
+  url?: string;
+  notion_page_id?: string;
+  mime_type?: string;
+  file_size_bytes?: number;
+  ai_context_summary?: string;
+  storage_path?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectNotionLinkResponse {
+  id: string;
+  project_id: string;
+  notion_page_id: string;
+  notion_task_id?: string;
+  role?: string;
+  title?: string;
+  url?: string;
+  created_at?: string;
+}
+
+/** Schema describing what human input a blocker needs. */
+export interface BlockerInputSchema {
+  type: BlockerInputType;
+  label: string;
+  description?: string;
+  options?: string[];
+}
+
+/** Shape returned by GET /blockers. */
+export interface BlockerListItem {
+  id: string;
+  task_id?: string;
+  sprint_id?: string;
+  project_id?: string;
+  title: string;
+  description?: string;
+  blocker_type: BlockerType;
+  status: BlockerStatus;
+  input_schema: BlockerInputSchema;
+  resolution?: string;
+  resolved_at?: string;
+  source_error?: string;
+  created_at?: string;
+}
+
+/** Shape for POST /blockers. */
+export interface CreateBlockerRequest {
+  task_id?: string;
+  sprint_id?: string;
+  project_id?: string;
+  title: string;
+  description?: string;
+  blocker_type?: BlockerType;
+  input_schema?: BlockerInputSchema;
+}
+
+/** Response shape for POST /blockers. */
+export interface CreateBlockerResponse {
+  success: boolean;
+  blocker_id: string;
+  message: string;
+}
+
+/** Shape for POST /blockers/{id}/resolve. */
+export interface ResolveBlockerRequest {
+  resolution: string;
+  resolved_by?: string;
+}
+
+/** Response shape for POST /blockers/{id}/resolve. */
+export interface ResolveBlockerResponse {
+  success: boolean;
+  blocker_id: string;
+  task_id?: string;
+  auto_resumed?: boolean;
+  message: string;
+}
+
+/** Shape for POST /planning/decline. */
+export interface PlanningDeclineRequest {
+  conversationId: string;
+  feedback: string;
+}
+
+/** Response for POST /planning/decline — triggers regeneration. */
+export interface PlanningDeclineResponse {
+  success: boolean;
+  message: string;
+  conversation_id: string;
+  regeneration_started?: boolean;
+}
+
+/** Shape for POST /projects request body. */
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  repo_url?: string;
+  client_id?: string;
+  repo_id?: string;
+  planning_rigor?: string;
+  task_granularity?: string;
+  granularity_instructions?: string;
+}
+

@@ -1,0 +1,350 @@
+"use client"
+
+import { useReducer, useCallback } from "react"
+
+// --- Types ---
+
+export interface GuidedQuestion {
+  id: string
+  prompt: string
+  type: "single_choice" | "multi_choice" | "text" | "scale"
+  options: Array<{ value: string; label: string; description?: string }>
+  recommendation: string | null
+  required: boolean
+}
+
+export interface GuidedStep {
+  step_index: number
+  step_name: string
+  title: string
+  description: string
+  questions: GuidedQuestion[]
+  ready: boolean
+}
+
+export interface GuidedPlanningState {
+  status: "idle" | "loading" | "step_ready" | "generating" | "plan_ready" | "error"
+  sessionToken: string | null
+  conversationId: string | null
+  currentStep: GuidedStep | null
+  totalSteps: number
+  accumulatedAnswers: Record<string, unknown>
+  plan: unknown | null  // DecompositionRecommendation when plan is generated
+  error: string | null
+}
+
+type GuidedAction =
+  | { type: "START_LOADING" }
+  | { type: "STEP_RECEIVED"; step: GuidedStep; sessionToken: string; totalSteps: number }
+  | { type: "STEPS_COMPLETE"; sessionToken: string }
+  | { type: "ANSWER"; questionId: string; value: unknown }
+  | { type: "GENERATING" }
+  | { type: "PLAN_READY"; plan: unknown }
+  | { type: "CONVERSATION_ID_RECEIVED"; payload: string }
+  | { type: "ERROR"; error: string }
+  | { type: "RESET" }
+
+// --- Reducer ---
+
+const initialState: GuidedPlanningState = {
+  status: "idle",
+  sessionToken: null,
+  conversationId: null,
+  currentStep: null,
+  totalSteps: 4,
+  accumulatedAnswers: {},
+  plan: null,
+  error: null,
+}
+
+function reducer(state: GuidedPlanningState, action: GuidedAction): GuidedPlanningState {
+  switch (action.type) {
+    case "START_LOADING":
+      return { ...state, status: "loading", error: null }
+    case "STEP_RECEIVED":
+      return {
+        ...state,
+        status: "step_ready",
+        currentStep: action.step,
+        sessionToken: action.sessionToken,
+        totalSteps: action.totalSteps,
+      }
+    case "STEPS_COMPLETE":
+      return { ...state, status: "step_ready", sessionToken: action.sessionToken, currentStep: null }
+    case "ANSWER":
+      return {
+        ...state,
+        accumulatedAnswers: { ...state.accumulatedAnswers, [action.questionId]: action.value },
+      }
+    case "GENERATING":
+      return { ...state, status: "generating" }
+    case "PLAN_READY":
+      return { ...state, status: "plan_ready", plan: action.plan }
+    case "CONVERSATION_ID_RECEIVED":
+      return { ...state, conversationId: action.payload }
+    case "ERROR":
+      return { ...state, status: "error", error: action.error }
+    case "RESET":
+      return initialState
+    default:
+      return state
+  }
+}
+
+// --- Hook ---
+
+interface UseGuidedPlanningOptions {
+  notionTaskId?: string
+  goal?: string
+  context?: Record<string, unknown>
+}
+
+export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  const startPlanning = useCallback(async () => {
+    dispatch({ type: "START_LOADING" })
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const resp = await fetch("/api/planning/guided", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          step_index: 0,
+          notion_task_id: options.notionTaskId,
+          goal: options.goal || "",
+          context: options.context || {},
+          accumulated_answers: {},
+        }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data.detail || data.error || "Failed to start planning")
+
+      if (data.complete) {
+        dispatch({ type: "STEPS_COMPLETE", sessionToken: data.session_token })
+      } else {
+        dispatch({
+          type: "STEP_RECEIVED",
+          step: data.step,
+          sessionToken: data.session_token,
+          totalSteps: data.total_steps,
+        })
+      }
+    } catch (e) {
+      dispatch({ type: "ERROR", error: (e as Error).message })
+    }
+  }, [options.notionTaskId, options.goal, options.context])
+
+  const answerQuestion = useCallback((questionId: string, value: unknown) => {
+    dispatch({ type: "ANSWER", questionId, value })
+  }, [])
+
+  const nextStep = useCallback(async () => {
+    if (!state.currentStep || !state.sessionToken) return
+    dispatch({ type: "START_LOADING" })
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const nextIndex = state.currentStep.step_index + 1
+      const resp = await fetch("/api/planning/guided", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          step_index: nextIndex,
+          session_token: state.sessionToken,
+          accumulated_answers: state.accumulatedAnswers,
+        }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data.detail || "Failed to advance step")
+
+      if (data.complete) {
+        dispatch({ type: "STEPS_COMPLETE", sessionToken: data.session_token })
+      } else {
+        dispatch({
+          type: "STEP_RECEIVED",
+          step: data.step,
+          sessionToken: data.session_token,
+          totalSteps: data.total_steps,
+        })
+      }
+    } catch (e) {
+      dispatch({ type: "ERROR", error: (e as Error).message })
+    }
+  }, [state.currentStep, state.sessionToken, state.accumulatedAnswers])
+
+  const goBack = useCallback(async () => {
+    if (!state.currentStep || state.currentStep.step_index === 0 || !state.sessionToken) return
+    dispatch({ type: "START_LOADING" })
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const prevIndex = state.currentStep.step_index - 1
+      // Strip answers for steps > target (back navigation contract)
+      const trimmedAnswers = { ...state.accumulatedAnswers }
+      // We don't know which keys belong to which step, so we keep all and let the backend regenerate
+
+      const resp = await fetch("/api/planning/guided", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          step_index: prevIndex,
+          session_token: state.sessionToken,
+          accumulated_answers: trimmedAnswers,
+        }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data.detail || "Failed to go back")
+
+      dispatch({
+        type: "STEP_RECEIVED",
+        step: data.step,
+        sessionToken: data.session_token,
+        totalSteps: data.total_steps,
+      })
+    } catch (e) {
+      dispatch({ type: "ERROR", error: (e as Error).message })
+    }
+  }, [state.currentStep, state.sessionToken, state.accumulatedAnswers])
+
+  const generatePlan = useCallback(async () => {
+    if (!state.sessionToken) return
+    dispatch({ type: "GENERATING" })
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const resp = await fetch("/api/planning/guided/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ session_token: state.sessionToken }),
+      })
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: "Generation failed" }))
+        throw new Error(err.detail || err.error || "Plan generation failed")
+      }
+
+      const contentType = resp.headers.get("content-type") || ""
+      if (!contentType.includes("text/event-stream")) {
+        // Not SSE — parse as JSON directly (e.g. synchronous response)
+        const data = await resp.json().catch(() => null)
+        if (data?.conversation_id) {
+          dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+        }
+        if (data?.recommendations) {
+          dispatch({ type: "PLAN_READY", plan: data.recommendations })
+        } else {
+          dispatch({ type: "ERROR", error: data?.error || data?.detail || "No plan generated" })
+        }
+        return
+      }
+
+      // Parse SSE stream for recommendations (same pattern as usePlanningChat)
+      const reader = resp.body?.getReader()
+      if (!reader) throw new Error("No response stream")
+
+      const decoder = new TextDecoder()
+      let plan: unknown = null
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+
+        // Process complete SSE messages (separated by double newline)
+        const sseMessages = buffer.split("\n\n")
+        buffer = sseMessages.pop() || ""
+
+        for (const sseMessage of sseMessages) {
+          for (const line of sseMessage.split("\n")) {
+            if (!line.startsWith("data: ")) continue
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.conversation_id && !state.conversationId) {
+                dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+              }
+              // Handle both { type: "recommendations", recommendations: {...} }
+              // and direct { recommendations: {...} } shapes
+              if (data.type === "recommendations" && data.recommendations) {
+                plan = data.recommendations
+              } else if (data.recommendations) {
+                plan = data.recommendations
+              }
+            } catch {
+              // Skip non-JSON lines
+            }
+          }
+        }
+      }
+
+      // Process any remaining buffered content
+      if (buffer.trim()) {
+        for (const line of buffer.split("\n")) {
+          if (!line.startsWith("data: ")) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.conversation_id && !state.conversationId) {
+              dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+            }
+            if (data.type === "recommendations" && data.recommendations) {
+              plan = data.recommendations
+            } else if (data.recommendations) {
+              plan = data.recommendations
+            }
+          } catch {
+            // Skip non-JSON lines
+          }
+        }
+      }
+
+      if (plan) {
+        dispatch({ type: "PLAN_READY", plan })
+      } else {
+        dispatch({ type: "ERROR", error: "No plan generated from stream" })
+      }
+    } catch (e) {
+      dispatch({ type: "ERROR", error: (e as Error).message })
+    }
+  }, [state.sessionToken])
+
+  const reset = useCallback(() => {
+    dispatch({ type: "RESET" })
+  }, [])
+
+  return {
+    ...state,
+    startPlanning,
+    answerQuestion,
+    nextStep,
+    goBack,
+    generatePlan,
+    reset,
+  }
+}
