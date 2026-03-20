@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from "@sentry/nextjs"
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -147,6 +148,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     // Handle unexpected errors
+    Sentry.captureException(error)
     console.error('Execution API error:', error)
 
     return NextResponse.json(

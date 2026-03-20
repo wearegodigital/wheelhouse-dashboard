@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from "@sentry/nextjs"
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { verifyMultipleEntities } from '@/lib/sync-verification'
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[approve] Approve API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

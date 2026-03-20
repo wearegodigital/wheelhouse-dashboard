@@ -22,7 +22,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-background/90 [.cyberpunk_&]:cyber-grid",
+      "fixed inset-0 z-[100] bg-background/90 [.cyberpunk_&]:cyber-grid",
       "data-[state=open]:animate-in data-[state=open]:fade-in-0",
       "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
       className
@@ -41,8 +41,8 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%]",
-        "gap-4 border-2 border-border bg-background p-6 sm:rounded-lg relative overflow-hidden shadow-lg duration-200",
+        "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2",
+        "max-h-[85vh] overflow-y-auto gap-4 border-2 border-border bg-background p-6 sm:rounded-lg shadow-lg duration-200",
         "[.cyberpunk_&]:border-primary/50 [.cyberpunk_&]:shadow-[0_0_20px_hsl(var(--primary)/0.3),inset_0_0_20px_hsl(var(--primary)/0.1)]",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
         "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",

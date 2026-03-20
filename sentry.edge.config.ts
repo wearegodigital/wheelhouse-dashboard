@@ -10,6 +10,6 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry
   debug: false,
 
-  // Only enable in production
-  enabled: process.env.NODE_ENV === "production",
+  // Enable when DSN is set (works in any environment with a DSN configured)
+  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 })

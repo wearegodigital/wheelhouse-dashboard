@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Allow Sentry tunnel route through without auth
+  if (request.nextUrl.pathname.startsWith("/monitoring")) {
+    return NextResponse.next()
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
 
   // Define public routes that don't require authentication

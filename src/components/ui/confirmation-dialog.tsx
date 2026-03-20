@@ -33,6 +33,9 @@ export function ConfirmationDialog({
   onConfirm,
   isLoading = false,
 }: ConfirmationDialogProps) {
+  // Don't mount when closed — prevents Radix DialogContent warning about missing DialogTitle
+  if (!open) return null
+
   const handleConfirm = async () => {
     await onConfirm()
     onOpenChange(false)

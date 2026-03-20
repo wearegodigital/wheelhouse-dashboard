@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { FileText } from "lucide-react"
 import { usePlanningChat } from "@/hooks/usePlanningChat"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,14 +41,25 @@ function isSimpleRecommendation(rec: DecompositionRecommendation | null): boolea
 interface PlanningChatProps {
   projectId?: string
   onApprove?: (recommendations: DecompositionRecommendation) => void
+  autoStartContext?: {
+    projectName: string
+    projectDescription: string
+    hasNotionTask: boolean
+    notionTitle?: string
+    notionPriority?: string
+    notionTaskType?: string
+    notionEstimatedTime?: number | null
+    notionDueDate?: string
+  }
 }
 
-export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
+export function PlanningChat({ projectId, onApprove, autoStartContext }: PlanningChatProps) {
   const router = useRouter()
   const [inputValue, setInputValue] = useState("")
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const hasAutoStarted = useRef(false)
   const {
     messages,
     isStreaming,
@@ -64,6 +76,31 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, currentPhase])
+
+  // Auto-start planning when context is provided
+  useEffect(() => {
+    if (
+      autoStartContext &&
+      !hasAutoStarted.current &&
+      messages.length === 0 &&
+      !isStreaming &&
+      !isLoading
+    ) {
+      hasAutoStarted.current = true
+      const prompt = `Plan this project: "${autoStartContext.projectName}"
+
+${autoStartContext.projectDescription ? `Description: ${autoStartContext.projectDescription}` : ""}
+${autoStartContext.notionTitle ? `Notion Task: ${autoStartContext.notionTitle}` : ""}
+${autoStartContext.notionPriority ? `Priority: ${autoStartContext.notionPriority}` : ""}
+${autoStartContext.notionTaskType ? `Type: ${autoStartContext.notionTaskType}` : ""}
+${autoStartContext.notionEstimatedTime ? `Estimated Time: ${autoStartContext.notionEstimatedTime} hours` : ""}
+${autoStartContext.notionDueDate ? `Due Date: ${autoStartContext.notionDueDate}` : ""}
+
+Please analyze the requirements and propose a decomposition into sprints and tasks. Consider the complexity, dependencies, and logical grouping of work.`
+
+      sendMessage(prompt)
+    }
+  }, [autoStartContext, messages.length, isStreaming, isLoading, sendMessage])
 
   const handleSend = async () => {
     if (!inputValue.trim() || isStreaming) return
@@ -102,18 +139,54 @@ export function PlanningChat({ projectId, onApprove }: PlanningChatProps) {
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto space-y-4">
+        {autoStartContext?.hasNotionTask && (
+          <Card className="mb-4 border-dashed">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notion Task Context
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2 space-y-1 text-sm">
+              {autoStartContext.notionTitle && (
+                <p><span className="text-muted-foreground">Task:</span> {autoStartContext.notionTitle}</p>
+              )}
+              {autoStartContext.notionPriority && (
+                <p><span className="text-muted-foreground">Priority:</span> {autoStartContext.notionPriority}</p>
+              )}
+              {autoStartContext.notionTaskType && (
+                <p><span className="text-muted-foreground">Type:</span> {autoStartContext.notionTaskType}</p>
+              )}
+              {autoStartContext.notionEstimatedTime && (
+                <p><span className="text-muted-foreground">Estimated:</span> {autoStartContext.notionEstimatedTime}h</p>
+              )}
+              {autoStartContext.notionDueDate && (
+                <p><span className="text-muted-foreground">Due:</span> {autoStartContext.notionDueDate}</p>
+              )}
+              {autoStartContext.projectDescription && (
+                <p className="mt-2 pt-2 border-t">{autoStartContext.projectDescription}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <CyberpunkSpinnerText text="Initializing chat..." />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-center px-4">
-            <div>
-              <p className="font-medium">Start planning your project</p>
-              <p className="text-sm mt-1">
-                Describe what you want to build and the Orchestrator will help you break it down into sprints and tasks.
-              </p>
-            </div>
+            {autoStartContext ? (
+              <div>
+                <CyberpunkSpinnerText text="Analyzing project..." />
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium">Start planning your project</p>
+                <p className="text-sm mt-1">
+                  Describe what you want to build and the Orchestrator will help you break it down into sprints and tasks.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           messages.map((message) => (

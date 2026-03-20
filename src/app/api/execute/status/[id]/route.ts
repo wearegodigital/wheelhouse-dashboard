@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from "@sentry/nextjs"
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
@@ -47,6 +48,7 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[execute/status] Error fetching status:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

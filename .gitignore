@@ -46,3 +46,4 @@ supabase/.temp/
 
 # omc (claude code orchestration state)
 .omc/
+.env*.local

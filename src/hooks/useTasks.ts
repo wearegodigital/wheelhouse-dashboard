@@ -1,21 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
-import { deleteTask as deleteTaskApi, createTask as createTaskApi } from "@/lib/api/wheelhouse"
+import { deleteTask as deleteTaskApi, createTask as createTaskApi, updateEntity } from "@/lib/api/wheelhouse"
 import { sanitizeSearch } from "@/lib/utils"
 import type { TaskSummary, TaskFilters } from "@/types"
 
-async function updateViaApi(type: string, id: string, data: Record<string, unknown>) {
-  const response = await fetch("/api/update", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, id, ...data }),
-  })
-  const result = await response.json()
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || "Update failed")
-  }
-  return result
-}
 
 export function useTasks(filters?: TaskFilters) {
   return useQuery({
@@ -30,6 +18,7 @@ export function useTasks(filters?: TaskFilters) {
       let query = supabase
         .from("task_summary")
         .select("*")
+        .is("deleted_at", null)
         .order(sortBy, { ascending: sortOrder === "asc" })
 
       if (filters?.status) {
@@ -128,7 +117,7 @@ export function useUpdateTask() {
       mode?: string
       progress?: number
     }) => {
-      return updateViaApi("tasks", id, data)
+      return updateEntity("tasks", id, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })

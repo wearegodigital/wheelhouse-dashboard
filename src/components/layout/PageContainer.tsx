@@ -12,7 +12,7 @@ export function PageContainer({
   action
 }: PageContainerProps) {
   return (
-    <div className="container py-6">
+    <div className="w-full max-w-7xl mx-auto px-6 py-6">
       {(title || action) && (
         <div className="flex items-center justify-between mb-6">
           <div>

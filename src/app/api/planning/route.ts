@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import * as Sentry from "@sentry/nextjs"
 import { createClient } from '@supabase/supabase-js'
 
 // Use Edge Runtime for proper SSE streaming on Vercel
@@ -168,6 +169,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[planning] Error processing planning request:', error)
     return new Response(
       JSON.stringify({ error: 'Failed to process request' }),

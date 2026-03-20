@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import * as Sentry from "@sentry/nextjs"
 import { createClient } from "@/lib/supabase/server"
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
@@ -14,7 +15,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const entityType = searchParams.get("type") // projects, sprints, tasks
+  const entityType = searchParams.get("type") // projects, sprints, tasks, clients, repos
   const entityId = searchParams.get("id")
   const cascade = searchParams.get("cascade") === "true"
 
@@ -25,7 +26,7 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
-  if (!["projects", "sprints", "tasks"].includes(entityType)) {
+  if (!["projects", "sprints", "tasks", "clients", "repos"].includes(entityType)) {
     return NextResponse.json(
       { success: false, message: "Invalid entity type" },
       { status: 400 }
@@ -33,10 +34,12 @@ export async function DELETE(request: NextRequest) {
   }
 
   // Try Modal API first (for projects created through Modal/JSONL pipeline)
-  if (MODAL_API_URL) {
+  // Only attempt Modal for entity types it knows about
+  if (MODAL_API_URL && ["projects", "sprints", "tasks"].includes(entityType)) {
     try {
       const params = new URLSearchParams()
       if (cascade) params.append("cascade", "true")
+      params.append("force", "true")
       const query = params.toString()
 
       const modalUrl = `${MODAL_API_URL}/${entityType}/${entityId}${query ? `?${query}` : ""}`
@@ -86,6 +89,7 @@ export async function DELETE(request: NextRequest) {
 
   // Fallback: soft delete directly in Supabase
   // Handles projects created via dashboard UI (direct Supabase insert, no JSONL events)
+  // Also handles clients and repos (not in Modal at all)
   try {
     const supabase = await createClient()
     const now = new Date().toISOString()
@@ -93,6 +97,94 @@ export async function DELETE(request: NextRequest) {
     const projectSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
     const sprintSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
     const taskSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
+    const clientSoftDelete = { deleted_at: now, updated_at: now }
+    const repoSoftDelete = { deleted_at: now, updated_at: now }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any
+
+    if (cascade && entityType === "clients") {
+      // Get repo IDs for this client
+      const { data: repos } = await db
+        .from("repos")
+        .select("id")
+        .eq("client_id", entityId)
+        .is("deleted_at", null)
+
+      const repoRows = repos as { id: string }[] | null
+      if (repoRows && repoRows.length > 0) {
+        const repoIds = repoRows.map((r) => r.id)
+
+        // Get project IDs for these repos
+        const { data: projects } = await db
+          .from("projects")
+          .select("id")
+          .in("repo_id", repoIds)
+          .is("deleted_at", null)
+
+        const projectRows = projects as { id: string }[] | null
+        if (projectRows && projectRows.length > 0) {
+          const projectIds = projectRows.map((p) => p.id)
+
+          // Get sprint IDs for these projects
+          const { data: sprints } = await supabase
+            .from("sprints")
+            .select("id")
+            .in("project_id", projectIds)
+            .is("deleted_at", null)
+
+          const sprintRows = sprints as { id: string }[] | null
+          if (sprintRows && sprintRows.length > 0) {
+            const sprintIds = sprintRows.map((s) => s.id)
+            // Delete FK-dependent rows first: events and agents referencing these tasks/sprints
+            await supabase.from("tasks").update(taskSoftDelete).in("sprint_id", sprintIds)
+          }
+
+          // Soft delete tasks directly linked to projects (no sprint)
+          await supabase.from("tasks").update(taskSoftDelete).in("project_id", projectIds)
+          // Soft delete sprints
+          await supabase.from("sprints").update(sprintSoftDelete).in("project_id", projectIds)
+          // Soft delete projects
+          await supabase.from("projects").update(projectSoftDelete).in("id", projectIds)
+        }
+
+        // Soft delete repos
+        await db.from("repos").update(repoSoftDelete).in("id", repoIds)
+      }
+    }
+
+    if (cascade && entityType === "repos") {
+      // Get project IDs for this repo
+      const { data: projects } = await db
+        .from("projects")
+        .select("id")
+        .eq("repo_id", entityId)
+        .is("deleted_at", null)
+
+      const projectRows = projects as { id: string }[] | null
+      if (projectRows && projectRows.length > 0) {
+        const projectIds = projectRows.map((p) => p.id)
+
+        // Get sprint IDs for these projects
+        const { data: sprints } = await supabase
+          .from("sprints")
+          .select("id")
+          .in("project_id", projectIds)
+          .is("deleted_at", null)
+
+        const sprintRows = sprints as { id: string }[] | null
+        if (sprintRows && sprintRows.length > 0) {
+          const sprintIds = sprintRows.map((s) => s.id)
+          await supabase.from("tasks").update(taskSoftDelete).in("sprint_id", sprintIds)
+        }
+
+        // Soft delete tasks directly linked to projects (no sprint)
+        await supabase.from("tasks").update(taskSoftDelete).in("project_id", projectIds)
+        // Soft delete sprints
+        await supabase.from("sprints").update(sprintSoftDelete).in("project_id", projectIds)
+        // Soft delete projects
+        await supabase.from("projects").update(projectSoftDelete).in("id", projectIds)
+      }
+    }
 
     if (cascade && entityType === "projects") {
       // Get sprint IDs for this project
@@ -100,6 +192,7 @@ export async function DELETE(request: NextRequest) {
         .from("sprints")
         .select("id")
         .eq("project_id", entityId)
+        .is("deleted_at", null)
 
       const sprintRows = sprints as { id: string }[] | null
       if (sprintRows && sprintRows.length > 0) {
@@ -129,8 +222,14 @@ export async function DELETE(request: NextRequest) {
     } else if (entityType === "sprints") {
       const { error } = await supabase.from("sprints").update(sprintSoftDelete).eq("id", entityId)
       deleteError = error
-    } else {
+    } else if (entityType === "tasks") {
       const { error } = await supabase.from("tasks").update(taskSoftDelete).eq("id", entityId)
+      deleteError = error
+    } else if (entityType === "clients") {
+      const { error } = await db.from("clients").update(clientSoftDelete).eq("id", entityId)
+      deleteError = error
+    } else if (entityType === "repos") {
+      const { error } = await db.from("repos").update(repoSoftDelete).eq("id", entityId)
       deleteError = error
     }
 
@@ -148,6 +247,7 @@ export async function DELETE(request: NextRequest) {
       deleted_at: now,
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error("[delete] Supabase fallback soft delete error:", error)
     return NextResponse.json(
       { success: false, message: "Internal server error" },

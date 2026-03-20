@@ -340,9 +340,16 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       try {
         const history = getHistoryForContext()
 
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+
         const response = await fetch("/api/planning", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({
             // Send backend session ID if we have it, otherwise null for new session
             conversationId: state.session?.backendConversationId || null,
