@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { PageContainer } from "@/components/layout/PageContainer"
@@ -49,6 +49,7 @@ import { GuidedWizard } from "@/components/planning/GuidedWizard"
 import { PlanReview } from "@/components/planning/PlanReview"
 import { NotionTaskAccordion } from "@/components/planning/NotionTaskAccordion"
 import type { DecompositionRecommendation } from "@/types"
+import { useToast } from "@/components/ui/toast"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1019,8 +1020,13 @@ function StepConfirm({
   const selectedRepo2 = allRepos?.find((r) => r.id === repoId)
   const defaultBranch = selectedRepo2?.default_branch || undefined
 
+  const { addToast } = useToast()
+  const isSubmittingRef = useRef(false)
+
   const createAndPlanMutation = useMutation({
     mutationFn: async () => {
+      if (isSubmittingRef.current) throw new Error("Already submitting")
+      isSubmittingRef.current = true
       // Step 1: Create project if needed
       let targetProjectId = isNewProject ? "" : projectId
 
@@ -1087,6 +1093,7 @@ function StepConfirm({
       return { projectId: targetProjectId }
     },
     onSuccess: ({ projectId: pid }) => {
+      addToast("Project created successfully", "success")
       if (onProjectCreated) {
         onProjectCreated(pid || "")
       } else if (pid) {
@@ -1094,6 +1101,9 @@ function StepConfirm({
       } else {
         router.push("/projects")
       }
+    },
+    onError: () => {
+      isSubmittingRef.current = false
     },
   })
 
@@ -1312,13 +1322,21 @@ function StepConfirm({
         </Button>
         <Button
           onClick={() => createAndPlanMutation.mutate()}
-          disabled={createAndPlanMutation.isPending}
+          disabled={createAndPlanMutation.isPending || createAndPlanMutation.isSuccess || isSubmittingRef.current}
         >
           {createAndPlanMutation.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : createAndPlanMutation.isSuccess ? (
+            <CheckCircle2 className="h-4 w-4 mr-2" />
           ) : null}
-          Create &amp; Plan
-          <ArrowRight className="h-4 w-4 ml-2" />
+          {createAndPlanMutation.isPending
+            ? "Creating..."
+            : createAndPlanMutation.isSuccess
+            ? "Created!"
+            : "Create & Plan"}
+          {!createAndPlanMutation.isPending && !createAndPlanMutation.isSuccess && (
+            <ArrowRight className="h-4 w-4 ml-2" />
+          )}
         </Button>
       </div>
 
