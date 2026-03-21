@@ -1367,7 +1367,7 @@ export default function ProcessTaskPage() {
   const [notionTaskData, setNotionTaskData] = useState<NotionTaskData | null>(null)
 
   // Planning phase state
-  const [planningPhase, setPlanningPhase] = useState<"wizard" | "guided" | "review" | "done">("wizard")
+  const [planningPhase, setPlanningPhase] = useState<"wizard" | "generating" | "guided" | "review" | "done">("wizard")
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
 
   const guidedPlanning = useGuidedPlanning({
@@ -1387,19 +1387,57 @@ export default function ProcessTaskPage() {
     },
   })
 
-  // Start guided planning when entering "guided" phase
+  // Start guided planning when entering "guided" or "generating" phase
   useEffect(() => {
-    if (planningPhase === "guided" && guidedPlanning.status === "idle") {
+    if ((planningPhase === "guided" || planningPhase === "generating") && guidedPlanning.status === "idle") {
       guidedPlanning.startPlanning()
     }
   }, [planningPhase, guidedPlanning.status, guidedPlanning.startPlanning])
 
-  // Transition to review when plan is ready
+  // In "generating" phase: once session token is ready (steps_complete or step_ready), generate immediately
+  useEffect(() => {
+    if (
+      planningPhase === "generating" &&
+      (guidedPlanning.status === "step_ready") &&
+      guidedPlanning.sessionToken
+    ) {
+      guidedPlanning.generatePlan()
+    }
+  }, [planningPhase, guidedPlanning.status, guidedPlanning.sessionToken, guidedPlanning.generatePlan])
+
+  // Transition to review when plan is ready (collaborate + review rigor)
+  // For "delegate" rigor, auto-approve instead
   useEffect(() => {
     if (guidedPlanning.status === "plan_ready") {
-      setPlanningPhase("review")
+      if (planningRigor === "delegate") {
+        // Auto-approve: call the approve API and redirect
+        void (async () => {
+          try {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            await fetch("/api/planning/approve", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+              },
+              body: JSON.stringify({
+                conversationId: guidedPlanning.conversationId,
+                recommendation: guidedPlanning.plan,
+                projectId: createdProjectId,
+              }),
+            })
+          } catch (e) {
+            console.error("Auto-approve failed:", e)
+          } finally {
+            router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
+          }
+        })()
+      } else {
+        setPlanningPhase("review")
+      }
     }
-  }, [guidedPlanning.status])
+  }, [guidedPlanning.status, planningRigor, guidedPlanning.conversationId, guidedPlanning.plan, createdProjectId, router])
 
   function handleNotionData(data: NotionTaskData) {
     setNotionTaskData(data)
@@ -1418,11 +1456,19 @@ export default function ProcessTaskPage() {
 
   function handleProjectCreated(pid: string) {
     setCreatedProjectId(pid || null)
-    setPlanningPhase("guided")
+    if (planningRigor === "delegate" || planningRigor === "review") {
+      // Skip guided questions — go straight to plan generation
+      setPlanningPhase("generating")
+    } else {
+      // "collaborate" — guided questions first
+      setPlanningPhase("guided")
+    }
   }
 
   const pageDescription =
-    planningPhase === "guided"
+    planningPhase === "generating"
+      ? "Generating plan…"
+      : planningPhase === "guided"
       ? "AI-guided planning — answer a few questions to generate a plan"
       : planningPhase === "review"
       ? "Review the generated plan before approving"
@@ -1503,6 +1549,13 @@ export default function ProcessTaskPage() {
               />
             )}
           </>
+        )}
+
+        {planningPhase === "generating" && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Generating plan…</p>
+          </div>
         )}
 
         {planningPhase === "guided" && createdProjectId !== null && (
