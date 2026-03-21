@@ -291,6 +291,7 @@ export default function RepoDetailPage() {
             </CardHeader>
             <CardContent>
               <GitHubRepoPicker
+                key={`${repo.github_org}-${repo.github_repo}`}
                 onSelect={handleGitHubSelect}
                 initialOrg={repo.github_org ?? undefined}
                 initialRepo={repo.github_repo ?? undefined}

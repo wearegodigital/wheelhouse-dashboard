@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,9 +33,7 @@ function RepoCardSkeleton() {
 
 // ─── Repo card ─────────────────────────────────────────────────────────────────
 
-function RepoCard({ repo, clientName }: { repo: Repo; clientName?: string }) {
-  const { data: projects } = useProjects({ repo_id: repo.id })
-
+function RepoCard({ repo, clientName, projectCount }: { repo: Repo; clientName?: string; projectCount: number }) {
   const githubHandle =
     repo.github_org && repo.github_repo
       ? `${repo.github_org}/${repo.github_repo}`
@@ -71,7 +69,7 @@ function RepoCard({ repo, clientName }: { repo: Repo; clientName?: string }) {
             </span>
             <span className="flex items-center gap-1.5">
               <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-              {projects == null ? "—" : `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+              {`${projectCount} project${projectCount !== 1 ? "s" : ""}`}
             </span>
           </div>
         </CardContent>
@@ -87,8 +85,17 @@ export default function ReposPage() {
 
   const { data: repos, isLoading } = useRepos({ search: search || undefined })
   const { data: clients } = useClients()
+  const { data: allProjects } = useProjects()
 
   const clientMap = new Map(clients?.map((c) => [c.id, c.name]) ?? [])
+
+  const projectCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    allProjects?.forEach((p) => {
+      if (p.repo_id) map.set(p.repo_id, (map.get(p.repo_id) ?? 0) + 1)
+    })
+    return map
+  }, [allProjects])
 
   return (
     <PageContainer
@@ -144,6 +151,7 @@ export default function ReposPage() {
               key={repo.id}
               repo={repo}
               clientName={repo.client_id ? clientMap.get(repo.client_id) : undefined}
+              projectCount={projectCountMap.get(repo.id) ?? 0}
             />
           ))}
         </div>
