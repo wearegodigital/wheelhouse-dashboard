@@ -174,6 +174,7 @@ function StepTaskDetails({
     queryFn: async () => {
       const supabase = createClient()
       const { data: task, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from("notion_tasks" as any)
         .select("*")
         .eq("notion_page_id", pageId)
@@ -1022,11 +1023,13 @@ function StepConfirm({
 
   const { addToast } = useToast()
   const isSubmittingRef = useRef(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const createAndPlanMutation = useMutation({
     mutationFn: async () => {
       if (isSubmittingRef.current) throw new Error("Already submitting")
       isSubmittingRef.current = true
+      setIsSubmitting(true)
       // Step 1: Create project if needed
       let targetProjectId = isNewProject ? "" : projectId
 
@@ -1104,6 +1107,7 @@ function StepConfirm({
     },
     onError: () => {
       isSubmittingRef.current = false
+      setIsSubmitting(false)
     },
   })
 
@@ -1322,7 +1326,7 @@ function StepConfirm({
         </Button>
         <Button
           onClick={() => createAndPlanMutation.mutate()}
-          disabled={createAndPlanMutation.isPending || createAndPlanMutation.isSuccess || isSubmittingRef.current}
+          disabled={createAndPlanMutation.isPending || createAndPlanMutation.isSuccess || isSubmitting}
         >
           {createAndPlanMutation.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1410,6 +1414,7 @@ export default function ProcessTaskPage() {
     if ((planningPhase === "guided" || planningPhase === "generating") && guidedPlanning.status === "idle") {
       guidedPlanning.startPlanning()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planningPhase, guidedPlanning.status, guidedPlanning.startPlanning])
 
   // In "generating" phase: once session token is ready (steps_complete or step_ready), generate immediately
@@ -1421,6 +1426,7 @@ export default function ProcessTaskPage() {
     ) {
       guidedPlanning.generatePlan()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planningPhase, guidedPlanning.status, guidedPlanning.sessionToken, guidedPlanning.generatePlan])
 
   // Transition to review when plan is ready (collaborate + review rigor)
@@ -1634,7 +1640,7 @@ export default function ProcessTaskPage() {
                     router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
                   }
                 }}
-                onReject={(_reason) => {
+                onReject={() => {
                   // reset() clears the plan; re-entering "guided" restarts the wizard
                   // The decline API has already sent feedback to the backend if conversationId was present
                   guidedPlanning.reset()

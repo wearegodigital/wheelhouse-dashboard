@@ -122,6 +122,7 @@ async function supabaseFallback(
     }
     case "clients": {
       const p = payload as CreateClientBody
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("clients")
         .insert({
@@ -143,6 +144,7 @@ async function supabaseFallback(
     }
     case "repos": {
       const p = payload as CreateRepoBody
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("repos")
         .insert({
