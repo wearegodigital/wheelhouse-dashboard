@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ExternalLink,
@@ -14,6 +14,8 @@ import {
   Terminal,
   Plus,
   Bot,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +33,7 @@ import { ExecutionControls } from "@/components/execution/ExecutionControls";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { SprintList } from "@/components/sprints";
 import { PlanningChat } from "@/components/planning";
+import { PlanReview } from "@/components/planning/PlanReview";
 import { ProjectAssistant } from "@/components/planning/ProjectAssistant";
 import { NotionImport } from "@/components/planning/NotionImport";
 import { AttachmentUpload } from "@/components/attachments/AttachmentUpload";
@@ -44,6 +47,7 @@ import { getStatusBadgeVariant } from "@/lib/status";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { ProjectSummary } from "@/lib/supabase/types";
+import type { DecompositionRecommendation } from "@/types";
 
 interface ProjectDetailClientProps {
   project: ProjectSummary;
@@ -71,6 +75,11 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
   const [newSprintDescription, setNewSprintDescription] = useState("");
   const [addSprintPending, setAddSprintPending] = useState(false);
 
+  // Saved plan state (for Planning tab)
+  const [savedPlan, setSavedPlan] = useState<{ id: string; recommendation: DecompositionRecommendation; status: string } | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState(false)
+  const [isApprovingSaved, setIsApprovingSaved] = useState(false)
+
   const deleteProject = useDeleteProject();
   const updateProject = useUpdateProject();
   const { addToast } = useToast();
@@ -80,6 +89,43 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
   const hasNoSprints = initialProject.sprint_count === 0;
 
   const { data: executionStatus } = useExecutionStatus(initialProject.id, isRunning);
+
+  // Load saved plan when Planning tab becomes active
+  useEffect(() => {
+    if (activeTab !== "planning") return
+    let cancelled = false
+    setLoadingPlan(true)
+    const run = async () => {
+      try {
+        const supabase = createClient()
+        const { data } = await (supabase
+          .from("planning_conversations" as any)
+          .select("id, recommendation, status")
+          .eq("project_id", initialProject.id)
+          .not("recommendation", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1) as any)
+        if (cancelled) return
+        const row = (data as Array<{ id: string; recommendation: unknown; status: string }> | null)?.[0]
+        if (row?.recommendation) {
+          setSavedPlan({
+            id: row.id,
+            recommendation: row.recommendation as DecompositionRecommendation,
+            status: row.status,
+          })
+        } else {
+          setSavedPlan(null)
+        }
+      } catch (e) {
+        console.error("Failed to load saved plan:", e)
+        if (!cancelled) setSavedPlan(null)
+      } finally {
+        if (!cancelled) setLoadingPlan(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [activeTab, initialProject.id])
 
   // Client and repo data
   const { data: client } = useClient(initialProject.client_id ?? "");
@@ -704,19 +750,112 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
       {activeTab === "planning" && (
         <ErrorBoundary>
-          <PlanningChat
-            projectId={initialProject.id}
-            autoStartContext={(initialProject.description || notionPageId) ? {
-              projectName: initialProject.name,
-              projectDescription: initialProject.description ?? "",
-              hasNotionTask: !!notionPageId,
-              notionTitle: notionTask?.title || "",
-              notionPriority: notionTask?.priority || "",
-              notionTaskType: notionTask?.task_type || "",
-              notionEstimatedTime: notionTask?.estimated_time || null,
-              notionDueDate: notionTask?.due_date || "",
-            } : undefined}
-          />
+          <div className="space-y-6">
+            {loadingPlan ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : savedPlan ? (
+              <>
+                {/* Project already has sprints (approved) */}
+                {initialProject.sprint_count > 0 ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center justify-between gap-2">
+                        <span>Plan Approved</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSavedPlan(null)
+                          }}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                          Re-generate Plan
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        This plan has been approved and{" "}
+                        {initialProject.sprint_count} sprint{initialProject.sprint_count !== 1 ? "s" : ""}{" "}
+                        {initialProject.sprint_count !== 1 ? "have" : "has"} been created. View them in the Sprints tab.
+                      </p>
+                      <PlanReview
+                        plan={savedPlan.recommendation}
+                        onApprove={() => {}}
+                        onReject={() => {}}
+                        conversationId={savedPlan.id}
+                        isApproving={false}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  /* Draft/planning state — show actionable PlanReview */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        A plan was generated for this project. Review and approve to create sprints and tasks.
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSavedPlan(null)}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                        Re-generate
+                      </Button>
+                    </div>
+                    <PlanReview
+                      plan={savedPlan.recommendation}
+                      conversationId={savedPlan.id}
+                      isApproving={isApprovingSaved}
+                      onApprove={async (modifiedPlan) => {
+                        setIsApprovingSaved(true)
+                        try {
+                          const resp = await fetch("/api/planning/approve", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              supabaseConversationId: savedPlan.id,
+                              projectId: initialProject.id,
+                              recommendation: modifiedPlan,
+                            }),
+                          })
+                          if (!resp.ok) throw new Error("Approval failed")
+                          addToast("Plan approved. Sprints and tasks created.", "success")
+                          router.refresh()
+                        } catch (e) {
+                          console.error("Approval error:", e)
+                          addToast("Failed to approve plan.", "error")
+                        } finally {
+                          setIsApprovingSaved(false)
+                        }
+                      }}
+                      onReject={() => {
+                        setSavedPlan(null)
+                      }}
+                    />
+                  </>
+                )}
+              </>
+            ) : (
+              /* No saved plan — show PlanningChat */
+              <PlanningChat
+                projectId={initialProject.id}
+                autoStartContext={(initialProject.description || notionPageId) ? {
+                  projectName: initialProject.name,
+                  projectDescription: initialProject.description ?? "",
+                  hasNotionTask: !!notionPageId,
+                  notionTitle: notionTask?.title || "",
+                  notionPriority: notionTask?.priority || "",
+                  notionTaskType: notionTask?.task_type || "",
+                  notionEstimatedTime: notionTask?.estimated_time || null,
+                  notionDueDate: notionTask?.due_date || "",
+                } : undefined}
+              />
+            )}
+          </div>
         </ErrorBoundary>
       )}
 
