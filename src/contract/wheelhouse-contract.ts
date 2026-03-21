@@ -183,6 +183,12 @@ export interface ProjectListItem {
   planning_rigor?: string;
   task_granularity?: string;
   created_at?: string;
+  client_name?: string;
+  repo_name?: string;
+  sprint_count?: number;
+  sprints_completed?: number;
+  task_count?: number;
+  tasks_completed?: number;
 }
 
 /** Shape returned by GET /projects/{id} (the project object). */
@@ -200,6 +206,14 @@ export interface ProjectDetail {
   repo_url?: string;
   default_branch?: string;
   created_at?: string;
+  client_name?: string;
+  repo_name?: string;
+  github_org?: string;
+  github_repo?: string;
+  sprint_count?: number;
+  sprints_completed?: number;
+  task_count?: number;
+  tasks_completed?: number;
   sprints?: SprintListItem[];
 }
 
@@ -594,5 +608,16 @@ export interface CreateProjectRequest {
   planning_rigor?: string;
   task_granularity?: string;
   granularity_instructions?: string;
+}
+
+/** Dashboard stats overview response. */
+export interface StatsOverviewResponse {
+  total_projects?: number;
+  active_projects?: number;
+  total_tasks?: number;
+  tasks_completed?: number;
+  tasks_in_progress?: number;
+  tasks_blocked?: number;
+  notion_tasks_to_delegate?: number;
 }
 
