@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/components/ui/toast"
 import { useRepo, useUpdateRepo } from "@/hooks/useRepos"
 import { useProjects } from "@/hooks/useProjects"
 import { getStatusBadgeVariant } from "@/lib/status"
+import { GitHubRepoPicker, GitHubRepoSelection } from "@/components/repos/GitHubRepoPicker"
 import Link from "next/link"
 
 interface EditFormData {
@@ -31,6 +33,7 @@ export default function RepoDetailPage() {
   const { data: repo, isLoading, error } = useRepo(id)
   const { data: allProjects } = useProjects({ repo_id: id })
   const updateRepo = useUpdateRepo()
+  const { addToast } = useToast()
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState<EditFormData>({
@@ -70,6 +73,22 @@ export default function RepoDetailPage() {
       default_branch: editForm.default_branch,
     })
     setIsEditing(false)
+  }
+
+  const handleGitHubSelect = async (selection: GitHubRepoSelection) => {
+    if (!repo) return
+    try {
+      await updateRepo.mutateAsync({
+        id: repo.id,
+        github_org: selection.org,
+        github_repo: selection.repo,
+        repo_url: selection.repoUrl,
+        default_branch: selection.branch || selection.defaultBranch || "main",
+      })
+      addToast("Repository linked to GitHub", "success")
+    } catch {
+      addToast("Failed to link repository to GitHub", "error")
+    }
   }
 
   const githubUrl =
@@ -262,6 +281,23 @@ export default function RepoDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* GitHub picker */}
+        {!isEditing && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Link to GitHub</CardTitle>
+              <CardDescription>Select an org, repo, and branch to auto-save the GitHub connection</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GitHubRepoPicker
+                onSelect={handleGitHubSelect}
+                initialOrg={repo.github_org ?? undefined}
+                initialRepo={repo.github_repo ?? undefined}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Projects section */}
         <div className="space-y-3">

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { FolderGit2, GitBranch, CheckCircle2, Trash2 } from "lucide-react"
+import { FolderGit2, GitBranch, CheckCircle2, Trash2, Users } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,9 +11,11 @@ import { CardSkeleton } from "@/components/ui/card-skeleton"
 import { ProgressBar } from "@/components/ui/progress-bar"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { useProjects, useDeleteProject } from "@/hooks/useProjects"
+import { useClients } from "@/hooks/useClients"
+import { useRepos } from "@/hooks/useRepos"
 import { useQueryClient } from "@tanstack/react-query"
 import { getStatusBadgeVariant, pluralize } from "@/lib/status"
-import type { ProjectSummary, ProjectStatus } from "@/lib/supabase/types"
+import type { ProjectSummary, ProjectStatus, Client, Repo } from "@/lib/supabase/types"
 
 interface ProjectListProps {
   filters?: {
@@ -24,6 +26,10 @@ interface ProjectListProps {
 
 export function ProjectList({ filters }: ProjectListProps) {
   const { data: projects, isLoading, error } = useProjects(filters)
+  const { data: clients } = useClients()
+  const { data: repos } = useRepos()
+  const clientMap = Object.fromEntries((clients ?? []).map((c) => [c.id, c]))
+  const repoMap = Object.fromEntries((repos ?? []).map((r) => [r.id, r]))
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -160,6 +166,8 @@ export function ProjectList({ filters }: ProjectListProps) {
             project={project}
             selected={selectedIds.has(project.id)}
             onToggle={toggleSelection}
+            clientName={project.client_id ? clientMap[project.client_id]?.name : undefined}
+            repoName={project.repo_id ? repoMap[project.repo_id]?.name : undefined}
           />
         ))}
       </div>
@@ -199,10 +207,14 @@ function ProjectCard({
   project,
   selected,
   onToggle,
+  clientName,
+  repoName,
 }: {
   project: ProjectSummary
   selected: boolean
   onToggle: (id: string) => void
+  clientName?: string
+  repoName?: string
 }) {
   const progress = project.task_count > 0
     ? Math.round((project.tasks_completed / project.task_count) * 100)
@@ -237,6 +249,20 @@ function ProjectCard({
                 <CardDescription className="line-clamp-2 mt-1">
                   {project.description}
                 </CardDescription>
+                {(clientName || repoName) && (
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {clientName && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" /> {clientName}
+                      </span>
+                    )}
+                    {repoName && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <GitBranch className="h-3 w-3" /> {repoName}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <Badge variant={getStatusBadgeVariant(project.status)} className="shrink-0">
                 {project.status}

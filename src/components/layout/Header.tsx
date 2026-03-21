@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Settings, LogOut, Trash2, Users } from "lucide-react"
+import { Settings, LogOut, Trash2, Users, GitBranch } from "lucide-react"
 
 export function Header() {
   const { user, signOut, isLoading } = useAuth()
@@ -13,7 +13,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 [.cyberpunk_&]:border-b-2 [.cyberpunk_&]:border-primary [.cyberpunk_&]:shadow-[0_2px_8px_hsl(var(--primary)/0.3)] [.cyberpunk_&]:scan-lines">
       <div className="w-full max-w-7xl mx-auto px-6 flex h-14 items-center">
-        <Link href="/delegate" className="mr-6 flex items-center space-x-2">
+        <Link href="/" className="mr-6 flex items-center space-x-2">
           <svg
             viewBox="0 0 24 24"
             className="h-6 w-6 flex-shrink-0"
@@ -41,11 +41,14 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center space-x-6 text-sm font-medium flex-1">
-          <Link href="/delegate" className={navLinkClasses}>
+          <Link href="/" className={navLinkClasses}>
             Home
           </Link>
           <Link href="/clients" className={navLinkClasses}>
             <span className="flex items-center gap-1"><Users className="h-4 w-4" />Clients</span>
+          </Link>
+          <Link href="/repos" className={navLinkClasses}>
+            <span className="flex items-center gap-1"><GitBranch className="h-4 w-4" />Repos</span>
           </Link>
           <Link href="/projects" className={navLinkClasses}>
             Projects

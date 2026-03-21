@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ExternalLink,
   Calendar,
@@ -16,6 +17,7 @@ import {
   Bot,
   Loader2,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -364,18 +366,26 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
           {/* Meta badges row */}
           <div className="flex items-center gap-2 flex-wrap">
-            {client && (
-              <a href={`/clients/${initialProject.client_id}`}>
-                <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs">
+            {client && initialProject.client_id && (
+              <Link href={`/clients/${initialProject.client_id}`}>
+                <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer text-xs flex items-center gap-1">
+                  <Users className="h-3 w-3" />
                   {client.name}
                 </Badge>
-              </a>
+              </Link>
+            )}
+            {repo && initialProject.repo_id && (
+              <Link href={`/repos/${initialProject.repo_id}`}>
+                <Badge variant="outline" className="hover:bg-muted cursor-pointer text-xs flex items-center gap-1">
+                  <GitBranch className="h-3 w-3" />
+                  {repo.name}
+                </Badge>
+              </Link>
             )}
             {repo && githubUrl && (
               <a href={githubUrl} target="_blank" rel="noopener noreferrer">
                 <Badge variant="outline" className="hover:bg-muted cursor-pointer text-xs flex items-center gap-1">
-                  <GitBranch className="h-3 w-3" />
-                  {repo.name}
+                  GitHub
                   <ExternalLink className="h-3 w-3" />
                 </Badge>
               </a>
