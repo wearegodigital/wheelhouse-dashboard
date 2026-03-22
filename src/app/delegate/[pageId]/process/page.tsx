@@ -1241,6 +1241,13 @@ export default function ProcessTaskPage() {
     },
   })
 
+  // Redirect to plan detail page when plan_id is received during generation
+  useEffect(() => {
+    if (guidedPlanning.planId && planningPhase === "generating") {
+      router.push(`/planning/${guidedPlanning.planId}`)
+    }
+  }, [guidedPlanning.planId, planningPhase, router])
+
   // Start guided planning when entering "guided" or "generating" phase
   useEffect(() => {
     if ((planningPhase === "guided" || planningPhase === "generating") && guidedPlanning.status === "idle") {

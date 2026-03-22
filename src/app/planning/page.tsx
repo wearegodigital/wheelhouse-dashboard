@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -135,6 +136,7 @@ function RecommendationTree({ rec }: { rec: Record<string, unknown> }) {
 // ─── Plan card ───────────────────────────────────────────────────────────────
 
 function PlanCard({ plan }: { plan: Plan }) {
+  const router = useRouter()
   const [expanded, setExpanded] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [declineReason, setDeclineReason] = useState("")
@@ -186,13 +188,15 @@ function PlanCard({ plan }: { plan: Plan }) {
 
   return (
     <Card
-      className={
+      className={[
+        "cursor-pointer transition-colors hover:border-primary/40",
         isPendingReview
           ? "border-yellow-500/30"
           : isGenerating
           ? "border-blue-500/20"
-          : undefined
-      }
+          : undefined,
+      ].filter(Boolean).join(" ")}
+      onClick={() => router.push(`/planning/${plan.id}`)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
@@ -242,7 +246,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 space-y-3" onClick={(e) => e.stopPropagation()}>
         {/* Generating — animated progress indicator */}
         {isGenerating && (() => {
           let phase = "starting"

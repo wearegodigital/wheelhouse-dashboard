@@ -33,6 +33,7 @@ export interface GuidedPlanningState {
   status: "idle" | "loading" | "step_ready" | "generating" | "plan_ready" | "error"
   sessionToken: string | null
   conversationId: string | null
+  planId: string | null
   currentStep: GuidedStep | null
   totalSteps: number
   accumulatedAnswers: Record<string, unknown>
@@ -49,6 +50,7 @@ type GuidedAction =
   | { type: "GENERATING" }
   | { type: "PLAN_READY"; plan: unknown }
   | { type: "CONVERSATION_ID_RECEIVED"; payload: string }
+  | { type: "PLAN_ID_RECEIVED"; planId: string }
   | { type: "ERROR"; error: string }
   | { type: "RESET" }
   | { type: "PHASE_UPDATE"; phase: string; message: string; icon: string; elapsed: number }
@@ -59,6 +61,7 @@ const initialState: GuidedPlanningState = {
   status: "idle",
   sessionToken: null,
   conversationId: null,
+  planId: null,
   currentStep: null,
   totalSteps: 4,
   accumulatedAnswers: {},
@@ -92,6 +95,8 @@ function reducer(state: GuidedPlanningState, action: GuidedAction): GuidedPlanni
       return { ...state, status: "plan_ready", plan: action.plan }
     case "CONVERSATION_ID_RECEIVED":
       return { ...state, conversationId: action.payload }
+    case "PLAN_ID_RECEIVED":
+      return { ...state, planId: action.planId }
     case "ERROR":
       return { ...state, status: "error", error: action.error }
     case "RESET":
@@ -285,6 +290,9 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
         if (data?.conversation_id) {
           dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
         }
+        if (data?.plan_id) {
+          dispatch({ type: "PLAN_ID_RECEIVED", planId: data.plan_id })
+        }
         if (data?.recommendations) {
           dispatch({ type: "PLAN_READY", plan: data.recommendations })
         } else {
@@ -329,6 +337,9 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
                 const data = JSON.parse(line.slice(6))
                 if (data.conversation_id && !state.conversationId) {
                   dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+                }
+                if (data.plan_id && !state.planId) {
+                  dispatch({ type: "PLAN_ID_RECEIVED", planId: data.plan_id })
                 }
                 // Track generation phase progress from SSE events
                 if (
@@ -394,6 +405,9 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
             if (data.conversation_id && !state.conversationId) {
               dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
             }
+            if (data.plan_id && !state.planId) {
+              dispatch({ type: "PLAN_ID_RECEIVED", planId: data.plan_id })
+            }
             if (data.type === "recommendations" && data.recommendations) {
               plan = data.recommendations
             } else if (data.recommendations) {
@@ -438,7 +452,7 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
     } finally {
       clearTimeout(overallTimeout)
     }
-  }, [state.sessionToken, state.conversationId])
+  }, [state.sessionToken, state.conversationId, state.planId])
 
   const reset = useCallback(() => {
     dispatch({ type: "RESET" })

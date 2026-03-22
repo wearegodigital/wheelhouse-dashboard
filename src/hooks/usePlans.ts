@@ -36,6 +36,28 @@ export function usePlans(projectId: string) {
   })
 }
 
+export function usePlan(planId: string) {
+  const supabase = createClient()
+  return useQuery({
+    queryKey: ["plan", planId],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("plans")
+        .select("*")
+        .eq("id", planId)
+        .single()
+      if (error) throw error
+      return data as Plan
+    },
+    enabled: !!planId,
+    refetchInterval: (query) => {
+      const plan = query.state.data as Plan | undefined
+      return plan?.status === "generating" ? 3_000 : 10_000
+    },
+  })
+}
+
 export function useUpdatePlan() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -59,6 +81,7 @@ export function useUpdatePlan() {
       return res.json()
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan"] })
       queryClient.invalidateQueries({ queryKey: ["plans"] })
       queryClient.invalidateQueries({ queryKey: ["all-plans"] })
       queryClient.invalidateQueries({ queryKey: ["plan-review-count"] })
