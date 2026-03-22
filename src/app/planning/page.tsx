@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -140,6 +140,24 @@ function PlanCard({ plan }: { plan: Plan }) {
   const [declineReason, setDeclineReason] = useState("")
   const updatePlan = useUpdatePlan()
 
+  // Live elapsed time for generating plans
+  const [elapsed, setElapsed] = useState(() => {
+    if (plan.status !== "generating" || !plan.created_at) return 0
+    return Math.floor((Date.now() - new Date(plan.created_at).getTime()) / 1000)
+  })
+
+  useEffect(() => {
+    if (plan.status !== "generating" || !plan.created_at) return
+    const interval = setInterval(() => {
+      setElapsed(
+        Math.floor(
+          (Date.now() - new Date(plan.created_at!).getTime()) / 1000
+        )
+      )
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [plan.status, plan.created_at])
+
   const handleApprove = () => {
     updatePlan.mutate({ planId: plan.id, status: "approved" })
   }
@@ -227,19 +245,16 @@ function PlanCard({ plan }: { plan: Plan }) {
       <CardContent className="pt-0 space-y-3">
         {/* Generating — animated progress indicator */}
         {isGenerating && (() => {
-          const secs = plan.created_at
-            ? Math.floor((Date.now() - new Date(plan.created_at).getTime()) / 1000)
-            : 0
           let phase = "starting"
           let message = "Initializing container..."
-          if (secs >= 60) { phase = "planning";  message = "Generating plan..." }
-          else if (secs >= 15) { phase = "analyzing"; message = "Planning decomposition..." }
-          else if (secs >= 5)  { phase = "thinking";  message = "Analyzing codebase..." }
+          if (elapsed >= 60) { phase = "planning";  message = "Generating plan..." }
+          else if (elapsed >= 15) { phase = "analyzing"; message = "Planning decomposition..." }
+          else if (elapsed >= 5)  { phase = "thinking";  message = "Analyzing codebase..." }
           return (
             <PlanGenerationProgress
               phase={phase}
               message={message}
-              elapsed={secs}
+              elapsed={elapsed}
               isActive
             />
           )
