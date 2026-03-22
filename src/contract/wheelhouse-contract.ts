@@ -629,6 +629,8 @@ export interface PlanListItem {
   project_id: string;
   status: string;
   conversation_id?: string;
+  notion_task_id?: string;
+  repo_url?: string;
   created_at?: string;
   updated_at?: string;
   approved_at?: string;
@@ -640,6 +642,8 @@ export interface PlanDetail {
   project_id: string;
   status: string;
   conversation_id?: string;
+  notion_task_id?: string;
+  repo_url?: string;
   created_at?: string;
   updated_at?: string;
   approved_at?: string;

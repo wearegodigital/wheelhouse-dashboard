@@ -44,6 +44,7 @@ import { useGuidedPlanning } from "@/hooks/useGuidedPlanning"
 import { GuidedWizard } from "@/components/planning/GuidedWizard"
 import { PlanReview } from "@/components/planning/PlanReview"
 import { NotionTaskAccordion } from "@/components/planning/NotionTaskAccordion"
+import { PlanGenerationProgress } from "@/components/planning/PlanGenerationProgress"
 import type { DecompositionRecommendation } from "@/types"
 import { useToast } from "@/components/ui/toast"
 
@@ -1400,9 +1401,14 @@ export default function ProcessTaskPage() {
         )}
 
         {planningPhase === "generating" && (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Generating plan…</p>
+          <div className="flex flex-col items-center justify-center py-24 gap-6 max-w-sm mx-auto w-full">
+            <PlanGenerationProgress
+              phase={guidedPlanning.currentPhase?.phase ?? "starting"}
+              message={guidedPlanning.currentPhase?.message ?? "Initializing container..."}
+              icon={guidedPlanning.currentPhase?.icon}
+              elapsed={guidedPlanning.currentPhase?.elapsed ?? 0}
+              isActive
+            />
           </div>
         )}
 

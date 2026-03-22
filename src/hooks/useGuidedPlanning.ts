@@ -22,6 +22,13 @@ export interface GuidedStep {
   ready: boolean
 }
 
+export interface GenerationPhase {
+  phase: string
+  message: string
+  icon: string
+  elapsed: number
+}
+
 export interface GuidedPlanningState {
   status: "idle" | "loading" | "step_ready" | "generating" | "plan_ready" | "error"
   sessionToken: string | null
@@ -31,6 +38,7 @@ export interface GuidedPlanningState {
   accumulatedAnswers: Record<string, unknown>
   plan: unknown | null  // DecompositionRecommendation when plan is generated
   error: string | null
+  currentPhase: GenerationPhase | null
 }
 
 type GuidedAction =
@@ -43,6 +51,7 @@ type GuidedAction =
   | { type: "CONVERSATION_ID_RECEIVED"; payload: string }
   | { type: "ERROR"; error: string }
   | { type: "RESET" }
+  | { type: "PHASE_UPDATE"; phase: string; message: string; icon: string; elapsed: number }
 
 // --- Reducer ---
 
@@ -55,6 +64,7 @@ const initialState: GuidedPlanningState = {
   accumulatedAnswers: {},
   plan: null,
   error: null,
+  currentPhase: null,
 }
 
 function reducer(state: GuidedPlanningState, action: GuidedAction): GuidedPlanningState {
@@ -86,6 +96,16 @@ function reducer(state: GuidedPlanningState, action: GuidedAction): GuidedPlanni
       return { ...state, status: "error", error: action.error }
     case "RESET":
       return initialState
+    case "PHASE_UPDATE":
+      return {
+        ...state,
+        currentPhase: {
+          phase: action.phase,
+          message: action.message,
+          icon: action.icon,
+          elapsed: action.elapsed,
+        },
+      }
     default:
       return state
   }
@@ -309,6 +329,20 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
                 const data = JSON.parse(line.slice(6))
                 if (data.conversation_id && !state.conversationId) {
                   dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+                }
+                // Track generation phase progress from SSE events
+                if (
+                  data.phase &&
+                  data.type !== "recommendations" &&
+                  data.done !== true
+                ) {
+                  dispatch({
+                    type: "PHASE_UPDATE",
+                    phase: data.phase,
+                    message: data.message ?? "",
+                    icon: data.icon ?? "",
+                    elapsed: typeof data.elapsed === "number" ? data.elapsed : 0,
+                  })
                 }
                 if (data.type === "recommendations" && data.recommendations) {
                   plan = data.recommendations

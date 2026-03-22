@@ -37,6 +37,8 @@ export function useUpdatePlan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plans"] })
+      queryClient.invalidateQueries({ queryKey: ["all-plans"] })
+      queryClient.invalidateQueries({ queryKey: ["plan-review-count"] })
     },
   })
 }

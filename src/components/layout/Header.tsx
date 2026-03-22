@@ -3,10 +3,12 @@ import Link from "next/link"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Settings, LogOut, Trash2, Users, GitBranch, Send } from "lucide-react"
+import { Settings, LogOut, Trash2, Users, GitBranch, Send, ClipboardList } from "lucide-react"
+import { usePlanReviewCount } from "@/hooks/useAllPlans"
 
 export function Header() {
   const { user, signOut, isLoading } = useAuth()
+  const { data: reviewCount = 0 } = usePlanReviewCount()
 
   const navLinkClasses = "transition-colors hover:text-foreground/80 [.cyberpunk_&]:text-foreground [.cyberpunk_&]:hover:text-primary [.cyberpunk_&]:hover:shadow-[0_0_8px_hsl(var(--primary)/0.5)] [.cyberpunk_&]:px-2 [.cyberpunk_&]:py-1 [.cyberpunk_&]:rounded [.cyberpunk_&]:transition-all [.cyberpunk_&]:duration-300"
 
@@ -52,6 +54,17 @@ export function Header() {
           </Link>
           <Link href="/projects" className={navLinkClasses}>
             Projects
+          </Link>
+          <Link href="/planning" className={navLinkClasses}>
+            <span className="flex items-center gap-1 relative">
+              <ClipboardList className="h-4 w-4" />
+              Planning
+              {reviewCount > 0 && (
+                <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-yellow-500 text-white text-[10px] font-bold leading-none h-4 min-w-[1rem] px-1">
+                  {reviewCount > 99 ? "99+" : reviewCount}
+                </span>
+              )}
+            </span>
           </Link>
           <Link href="/delegate" className={navLinkClasses}>
             <span className="flex items-center gap-1"><Send className="h-4 w-4" />Delegate</span>
