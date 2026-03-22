@@ -117,12 +117,12 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       try {
         const supabase = createClient()
         const { data } = await (supabase
-          .from("planning_conversations" as any)
+          .from("planning_conversations" as unknown as string)
           .select("id, recommendation, status")
           .eq("project_id", initialProject.id)
           .not("recommendation", "is", null)
           .order("created_at", { ascending: false })
-          .limit(1) as any)
+          .limit(1) as unknown as { data: Array<{ id: string; recommendation: unknown; status: string }> | null })
         if (cancelled) return
         const row = (data as Array<{ id: string; recommendation: unknown; status: string }> | null)?.[0]
         if (row?.recommendation) {
@@ -166,11 +166,11 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       if (!notionPageId) return null
       const supabase = createClient()
       const { data } = await supabase
-        .from("notion_tasks" as any)
+        .from("notion_tasks" as unknown as string)
         .select("*")
         .eq("notion_page_id", notionPageId)
         .single()
-      return data as {
+      return data as unknown as {
         title?: string
         priority?: string
         task_type?: string

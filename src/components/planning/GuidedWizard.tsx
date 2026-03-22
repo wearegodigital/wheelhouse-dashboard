@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Sparkles, ChevronLeft, ChevronRight, Loader2, CheckCircle2, Lightbulb } from "lucide-react"
 

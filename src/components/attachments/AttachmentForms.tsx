@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Link, FileText, BookOpen, ChevronDown } from "lucide-react"
+import { Link, FileText, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"

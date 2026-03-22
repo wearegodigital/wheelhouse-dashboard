@@ -26,7 +26,7 @@ export function NotionImport({ projectId }: NotionImportProps) {
     queryFn: async () => {
       const supabase = createClient()
       const { data, error } = await supabase
-        .from("project_notion_links" as any)
+        .from("project_notion_links" as unknown as string)
         .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false })
@@ -68,6 +68,7 @@ export function NotionImport({ projectId }: NotionImportProps) {
       } catch { /* ignore */ }
 
       // Insert link directly to Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped Supabase table
       const { data, error } = await (supabase as any)
         .from("project_notion_links")
         .insert({
@@ -93,6 +94,7 @@ export function NotionImport({ projectId }: NotionImportProps) {
   const removeLink = useMutation({
     mutationFn: async (linkId: string) => {
       const supabase = createClient()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped Supabase table
       await (supabase as any).from("project_notion_links").delete().eq("id", linkId)
     },
     onSuccess: () => {

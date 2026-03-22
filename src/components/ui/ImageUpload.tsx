@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Upload, X, Image as ImageIcon, FileText } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
 import { CyberCorners } from "@/components/ui/cyber-corners"
 import { cn } from "@/lib/utils"
 

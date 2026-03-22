@@ -20,12 +20,12 @@ export function NotionTaskAccordion({ notionPageId, defaultExpanded = false }: N
     queryFn: async () => {
       const supabase = createClient()
       const { data, error } = await supabase
-        .from("notion_tasks" as any)
+        .from("notion_tasks" as unknown as string)
         .select("*")
         .eq("notion_page_id", notionPageId)
         .single()
       if (error) throw error
-      return data as any
+      return data as unknown as Record<string, unknown>
     },
     enabled: !!notionPageId,
   })

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, X, FileText, File } from "lucide-react"
+import { Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { CyberCorners } from "@/components/ui/cyber-corners"
 import { cn } from "@/lib/utils"
@@ -30,11 +30,6 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function getFileIcon(mimeType: string) {
-  if (mimeType.startsWith("image/")) return null // show thumbnail
-  return <FileText className="h-5 w-5" />
 }
 
 export function FileDropZone({

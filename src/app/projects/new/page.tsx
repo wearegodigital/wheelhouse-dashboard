@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useMemo, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 import { PageContainer } from "@/components/layout/PageContainer"
@@ -42,6 +42,11 @@ function NewProjectForm() {
 
   const { data: repos = [] } = useRepos(clientId ? { client_id: clientId } : undefined)
 
+  // When repos load, resolve the matched repo to auto-fill branch
+  const matchedRepo = initialRepoId && repos.length > 0
+    ? repos.find((r) => r.id === initialRepoId)
+    : undefined
+
   const [formData, setFormData] = useState<ProjectFormData>({
     name: "",
     description: "",
@@ -49,25 +54,19 @@ function NewProjectForm() {
     default_branch: "main",
   })
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({})
-
-  // When repos load, pre-select repo from query param and auto-fill branch
-  useEffect(() => {
-    if (initialRepoId && repos.length > 0) {
-      const repo = repos.find((r) => r.id === initialRepoId)
-      if (repo) {
-        setFormData((prev) => ({
-          ...prev,
-          repo_id: repo.id,
-          default_branch: repo.default_branch || "main",
-        }))
-      }
+  // Derive effective form values — matched repo overrides defaults until user changes them
+  const effectiveFormData = useMemo<ProjectFormData>(() => {
+    if (matchedRepo && formData.repo_id === initialRepoId) {
+      return { ...formData, default_branch: matchedRepo.default_branch || "main" }
     }
-  }, [initialRepoId, repos])
+    return formData
+  }, [formData, matchedRepo, initialRepoId])
+
+  const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({})
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ProjectFormData, string>> = {}
-    if (!formData.name.trim()) newErrors.name = "Name is required"
+    if (!effectiveFormData.name.trim()) newErrors.name = "Name is required"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -101,7 +100,7 @@ function NewProjectForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
-    createProjectMutation.mutate(formData)
+    createProjectMutation.mutate(effectiveFormData)
   }
 
   return (
@@ -171,7 +170,7 @@ function NewProjectForm() {
                   id="default_branch"
                   type="text"
                   placeholder="main"
-                  value={formData.default_branch}
+                  value={effectiveFormData.default_branch}
                   onChange={(e) => setFormData({ ...formData, default_branch: e.target.value })}
                 />
               </div>

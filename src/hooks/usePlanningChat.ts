@@ -495,6 +495,7 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
         dispatch({ type: "SET_STREAMING", payload: false })
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase.auth is a stable singleton
     [
       ensureConversation,
       getHistoryForContext,

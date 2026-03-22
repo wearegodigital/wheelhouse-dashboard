@@ -15,7 +15,7 @@ import { useClients } from "@/hooks/useClients"
 import { useRepos } from "@/hooks/useRepos"
 import { useQueryClient } from "@tanstack/react-query"
 import { getStatusBadgeVariant, pluralize } from "@/lib/status"
-import type { ProjectSummary, ProjectStatus, Client, Repo } from "@/lib/supabase/types"
+import type { ProjectSummary, ProjectStatus } from "@/lib/supabase/types"
 
 interface ProjectListProps {
   filters?: {

@@ -36,14 +36,6 @@ function sortByDueDate(tasks: NotionTask[]): NotionTask[] {
   })
 }
 
-function sortByUpdatedAt(tasks: NotionTask[]): NotionTask[] {
-  return [...tasks].sort((a, b) => {
-    const aTime = new Date(a.notion_last_edited ?? a.updated_at).getTime()
-    const bTime = new Date(b.notion_last_edited ?? b.updated_at).getTime()
-    return bTime - aTime  // most recent first
-  })
-}
-
 // ─── Sort types + logic ────────────────────────────────────────────────────────
 
 type DelegateSortBy =
