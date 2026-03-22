@@ -229,6 +229,14 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
   const generatePlan = useCallback(async () => {
     if (!state.sessionToken) return
     dispatch({ type: "GENERATING" })
+
+    const controller = new AbortController()
+    // Overall 5-minute timeout for the entire generation
+    const overallTimeout = setTimeout(() => {
+      controller.abort()
+      dispatch({ type: "ERROR", error: "Plan generation timed out after 5 minutes. Please try again." })
+    }, 5 * 60 * 1000)
+
     try {
       const { createClient } = await import("@/lib/supabase/client")
       const supabase = createClient()
@@ -242,6 +250,7 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ session_token: state.sessionToken }),
+        signal: controller.signal,
       })
 
       if (!resp.ok) {
@@ -251,7 +260,7 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
 
       const contentType = resp.headers.get("content-type") || ""
       if (!contentType.includes("text/event-stream")) {
-        // Not SSE — parse as JSON directly (e.g. synchronous response)
+        // Not SSE — parse as JSON directly
         const data = await resp.json().catch(() => null)
         if (data?.conversation_id) {
           dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
@@ -264,44 +273,63 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
         return
       }
 
-      // Parse SSE stream for recommendations (same pattern as usePlanningChat)
+      // Parse SSE stream with per-chunk timeout
       const reader = resp.body?.getReader()
       if (!reader) throw new Error("No response stream")
 
       const decoder = new TextDecoder()
       let plan: unknown = null
       let buffer = ""
+      const CHUNK_TIMEOUT_MS = 60_000 // 60 seconds between chunks (generation can be slow)
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      const readWithTimeout = async (): Promise<ReadableStreamReadResult<Uint8Array>> => {
+        return Promise.race([
+          reader.read(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Stream stalled — no data received for 60 seconds")), CHUNK_TIMEOUT_MS)
+          ),
+        ])
+      }
 
-        buffer += decoder.decode(value, { stream: true })
+      try {
+        while (true) {
+          const { done, value } = await readWithTimeout()
+          if (done) break
 
-        // Process complete SSE messages (separated by double newline)
-        const sseMessages = buffer.split("\n\n")
-        buffer = sseMessages.pop() || ""
+          buffer += decoder.decode(value, { stream: true })
 
-        for (const sseMessage of sseMessages) {
-          for (const line of sseMessage.split("\n")) {
-            if (!line.startsWith("data: ")) continue
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.conversation_id && !state.conversationId) {
-                dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+          // Process complete SSE messages
+          const sseMessages = buffer.split("\n\n")
+          buffer = sseMessages.pop() || ""
+
+          for (const sseMessage of sseMessages) {
+            for (const line of sseMessage.split("\n")) {
+              if (!line.startsWith("data: ")) continue
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.conversation_id && !state.conversationId) {
+                  dispatch({ type: "CONVERSATION_ID_RECEIVED", payload: data.conversation_id })
+                }
+                if (data.type === "recommendations" && data.recommendations) {
+                  plan = data.recommendations
+                } else if (data.recommendations) {
+                  plan = data.recommendations
+                }
+                // Handle explicit error events from the backend
+                if (data.type === "error") {
+                  throw new Error(data.error || data.detail || "Backend error during generation")
+                }
+              } catch (parseErr) {
+                // Re-throw if it's our explicit error, skip if it's just bad JSON
+                if (parseErr instanceof Error && parseErr.message !== "Unexpected end of JSON input") {
+                  if (!parseErr.message.includes("JSON")) throw parseErr
+                }
               }
-              // Handle both { type: "recommendations", recommendations: {...} }
-              // and direct { recommendations: {...} } shapes
-              if (data.type === "recommendations" && data.recommendations) {
-                plan = data.recommendations
-              } else if (data.recommendations) {
-                plan = data.recommendations
-              }
-            } catch {
-              // Skip non-JSON lines
             }
           }
         }
+      } finally {
+        reader.releaseLock()
       }
 
       // Process any remaining buffered content
@@ -327,12 +355,18 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       if (plan) {
         dispatch({ type: "PLAN_READY", plan })
       } else {
-        dispatch({ type: "ERROR", error: "No plan generated from stream" })
+        dispatch({ type: "ERROR", error: "Plan generation completed but no plan was returned. The backend may have encountered an error. Please try again." })
       }
     } catch (e) {
+      if (controller.signal.aborted) {
+        // Already dispatched timeout error above, or component unmounted
+        return
+      }
       dispatch({ type: "ERROR", error: (e as Error).message })
+    } finally {
+      clearTimeout(overallTimeout)
     }
-  }, [state.sessionToken])
+  }, [state.sessionToken, state.conversationId])
 
   const reset = useCallback(() => {
     dispatch({ type: "RESET" })
