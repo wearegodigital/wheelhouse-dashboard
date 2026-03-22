@@ -166,8 +166,9 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
     queryFn: async () => {
       if (!notionPageId) return null
       const supabase = createClient()
-      const { data } = await supabase
-        .from("notion_tasks" as unknown as string)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("notion_tasks")
         .select("*")
         .eq("notion_page_id", notionPageId)
         .single()

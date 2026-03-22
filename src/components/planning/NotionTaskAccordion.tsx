@@ -19,13 +19,14 @@ export function NotionTaskAccordion({ notionPageId, defaultExpanded = false }: N
     queryKey: ["notion-task-detail", notionPageId],
     queryFn: async () => {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from("notion_tasks" as unknown as string)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("notion_tasks")
         .select("*")
         .eq("notion_page_id", notionPageId)
         .single()
       if (error) throw error
-      return data as unknown as Record<string, unknown>
+      return data as Record<string, unknown>
     },
     enabled: !!notionPageId,
   })
@@ -50,7 +51,7 @@ export function NotionTaskAccordion({ notionPageId, defaultExpanded = false }: N
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">Notion</Badge>
-            <span className="font-medium text-sm">{task.title || "Untitled Task"}</span>
+            <span className="font-medium text-sm">{String(task.title ?? "Untitled Task")}</span>
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -70,56 +71,56 @@ export function NotionTaskAccordion({ notionPageId, defaultExpanded = false }: N
       {expanded && (
         <CardContent className="pt-0 pb-4 space-y-3">
           <div className="flex flex-wrap gap-2">
-            {task.status && (
+            {!!task.status && (
               <Badge variant={
-                task.status === "To Delegate" ? "default" :
-                task.status === "Delegated" ? "secondary" :
-                task.status === "Completed" ? "outline" : "default"
+                String(task.status) === "To Delegate" ? "default" :
+                String(task.status) === "Delegated" ? "secondary" :
+                String(task.status) === "Completed" ? "outline" : "default"
               }>
-                {task.status}
+                {String(task.status)}
               </Badge>
             )}
-            {task.priority && (
+            {!!task.priority && (
               <Badge variant={
-                task.priority === "High" ? "destructive" :
-                task.priority === "Medium" ? "default" : "secondary"
+                String(task.priority) === "High" ? "destructive" :
+                String(task.priority) === "Medium" ? "default" : "secondary"
               }>
-                {task.priority}
+                {String(task.priority)}
               </Badge>
             )}
-            {task.task_type && (
+            {!!task.task_type && (
               <Badge variant="outline">
-                <Tag className="h-3 w-3 mr-1" /> {task.task_type}
+                <Tag className="h-3 w-3 mr-1" /> {String(task.task_type)}
               </Badge>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {task.client_name && (
+            {!!task.client_name && (
               <div className="flex items-center gap-1 text-muted-foreground">
-                <User className="h-3 w-3" /> {task.client_name}
+                <User className="h-3 w-3" /> {String(task.client_name)}
               </div>
             )}
-            {task.due_date && (
+            {!!task.due_date && (
               <div className="flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-3 w-3" /> {task.due_date}
+                <Calendar className="h-3 w-3" /> {String(task.due_date)}
               </div>
             )}
-            {task.estimated_time && (
+            {!!task.estimated_time && (
               <div className="flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-3 w-3" /> {task.estimated_time}h estimated
+                <Clock className="h-3 w-3" /> {String(task.estimated_time)}h estimated
               </div>
             )}
-            {task.project_name && (
+            {!!task.project_name && (
               <div className="flex items-center gap-1 text-muted-foreground">
-                <Tag className="h-3 w-3" /> {task.project_name}
+                <Tag className="h-3 w-3" /> {String(task.project_name)}
               </div>
             )}
           </div>
 
-          {task.synced_at && (
+          {!!task.synced_at && (
             <p className="text-xs text-muted-foreground">
-              Last synced: {new Date(task.synced_at).toLocaleString()}
+              Last synced: {new Date(String(task.synced_at)).toLocaleString()}
             </p>
           )}
         </CardContent>

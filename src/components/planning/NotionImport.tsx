@@ -25,8 +25,9 @@ export function NotionImport({ projectId }: NotionImportProps) {
     queryKey: ["project-notion-links", projectId],
     queryFn: async () => {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from("project_notion_links" as unknown as string)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("project_notion_links")
         .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false })
