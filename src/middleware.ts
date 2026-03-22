@@ -36,7 +36,6 @@ export async function middleware(request: NextRequest) {
 
   // Define public routes that don't require authentication
   const isPublicRoute =
-    request.nextUrl.pathname === '/' ||
     request.nextUrl.pathname.startsWith('/auth')
 
   // Redirect unauthenticated users to login if they're not on a public route

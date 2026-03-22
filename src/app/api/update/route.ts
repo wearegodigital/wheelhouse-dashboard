@@ -141,7 +141,6 @@ export async function PUT(request: NextRequest) {
     }
 
     // Supabase direct update fallback
-    const supabase = await createClient()
     const now = new Date().toISOString()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)

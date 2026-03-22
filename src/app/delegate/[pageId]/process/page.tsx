@@ -169,7 +169,7 @@ function StepTaskDetails({
   onNotionData: (data: NotionTaskData) => void
   onNext: () => void
 }) {
-  const { data, isLoading } = useQuery({
+  const { data: notionTask, isLoading } = useQuery({
     queryKey: ["notion-task-detail", pageId],
     queryFn: async () => {
       const supabase = createClient()
@@ -180,12 +180,16 @@ function StepTaskDetails({
         .eq("notion_page_id", pageId)
         .single()
       if (error || !task) return null
-      const result = task as NotionTaskData
-      onNotionData(result)
-      return result
+      return task as NotionTaskData
     },
     retry: false,
   })
+
+  useEffect(() => {
+    if (notionTask) {
+      onNotionData(notionTask)
+    }
+  }, [notionTask, onNotionData])
 
   return (
     <div>
@@ -202,23 +206,23 @@ function StepTaskDetails({
               <div className="h-5 bg-muted rounded w-2/3" />
               <div className="h-4 bg-muted rounded w-1/2" />
             </div>
-          ) : data?.title ? (
+          ) : notionTask?.title ? (
             <div className="space-y-3">
-              <p className="font-semibold text-lg leading-snug">{data.title}</p>
+              <p className="font-semibold text-lg leading-snug">{notionTask.title}</p>
               <div className="flex flex-wrap gap-2">
-                {data.client_name && (
-                  <Badge variant="secondary">{data.client_name}</Badge>
+                {notionTask.client_name && (
+                  <Badge variant="secondary">{notionTask.client_name}</Badge>
                 )}
-                {data.priority && (
-                  <Badge variant="outline">{data.priority}</Badge>
+                {notionTask.priority && (
+                  <Badge variant="outline">{notionTask.priority}</Badge>
                 )}
-                {data.status && (
-                  <Badge variant="outline">{data.status}</Badge>
+                {notionTask.status && (
+                  <Badge variant="outline">{notionTask.status}</Badge>
                 )}
               </div>
-              {data.description && (
+              {notionTask.description && (
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {data.description}
+                  {notionTask.description}
                 </p>
               )}
             </div>

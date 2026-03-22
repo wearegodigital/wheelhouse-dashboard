@@ -91,7 +91,6 @@ export async function DELETE(request: NextRequest) {
   // Handles projects created via dashboard UI (direct Supabase insert, no JSONL events)
   // Also handles clients and repos (not in Modal at all)
   try {
-    const supabase = await createClient()
     const now = new Date().toISOString()
     // Use typed objects per table to satisfy Supabase typed client
     const projectSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }

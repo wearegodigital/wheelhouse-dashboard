@@ -31,6 +31,7 @@ interface UsePlanningChatOptions {
   sprintId?: string
   skipHistory?: boolean
   onApprove?: (recommendation: DecompositionRecommendation) => void
+  onError?: (error: Error) => void
 }
 
 interface PlanningConversation {
@@ -340,7 +341,6 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
       try {
         const history = getHistoryForContext()
 
-        const supabase = createClient()
         const { data: { session } } = await supabase.auth.getSession()
         const token = session?.access_token
 
@@ -515,31 +515,41 @@ export function usePlanningChat(options: UsePlanningChatOptions = {}) {
 
     dispatch({ type: "APPROVE_START" })
 
-    const response = await fetch("/api/planning/approve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId: state.session?.backendConversationId,  // Backend session ID
-        supabaseConversationId: state.conversationId,          // Local DB record ID
-        projectId: options.projectId,
-        sprintId: options.sprintId,
-        recommendation: state.currentRecommendation,
-      }),
-    })
+    try {
+      const response = await fetch("/api/planning/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: state.session?.backendConversationId,  // Backend session ID
+          supabaseConversationId: state.conversationId,          // Local DB record ID
+          projectId: options.projectId,
+          sprintId: options.sprintId,
+          recommendation: state.currentRecommendation,
+        }),
+      })
 
-    const result = await response.json()
-    options.onApprove?.(state.currentRecommendation)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Approval failed (${response.status})`)
+      }
 
-    dispatch({ type: "APPROVE_COMPLETE" })
+      const result = await response.json()
+      options.onApprove?.(state.currentRecommendation)
 
-    return {
-      projectId: result.projectId || options.projectId,
-      verification: result.verification ? {
-        verified: result.verification.verified,
-        message: result.verification.verified
-          ? undefined
-          : `${result.verification.successful}/${result.verification.total} entities synced. Some may still be syncing.`
-      } : undefined
+      return {
+        projectId: result.projectId || options.projectId,
+        verification: result.verification ? {
+          verified: result.verification.verified,
+          message: result.verification.verified
+            ? undefined
+            : `${result.verification.successful}/${result.verification.total} entities synced. Some may still be syncing.`
+        } : undefined
+      }
+    } catch (error) {
+      console.error("Approval failed:", error)
+      options.onError?.(error instanceof Error ? error : new Error(String(error)))
+    } finally {
+      dispatch({ type: "APPROVE_COMPLETE" })
     }
   }, [state.currentRecommendation, state.conversationId, state.session, options])
 

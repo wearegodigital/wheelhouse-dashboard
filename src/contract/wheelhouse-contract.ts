@@ -395,6 +395,8 @@ export interface ExecutionStatusResponse {
   branch?: string;
   total_tasks?: number;
   completed_tasks?: number;
+  failed_tasks?: number;
+  finished_tasks?: number;
   running_tasks?: number;
   blocked_tasks?: number;
   open_blockers?: number;
