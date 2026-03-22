@@ -1,15 +1,38 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { createClient } from "@/lib/supabase/client"
+
+export interface Plan {
+  id: string
+  project_id: string | null
+  conversation_id: string | null
+  status: string
+  recommendation: Record<string, unknown> | null
+  decline_reason: string | null
+  notion_task_id: string | null
+  repo_url: string | null
+  created_at: string | null
+  updated_at: string | null
+  approved_at: string | null
+  deleted_at: string | null
+}
 
 export function usePlans(projectId: string) {
+  const supabase = createClient()
   return useQuery({
     queryKey: ["plans", projectId],
     queryFn: async () => {
-      const res = await fetch(`/api/plans?projectId=${projectId}`)
-      if (!res.ok) throw new Error("Failed to fetch plans")
-      const data = await res.json()
-      return data.plans as Plan[]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("plans")
+        .select("*")
+        .eq("project_id", projectId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      return (data || []) as Plan[]
     },
     enabled: !!projectId,
+    refetchInterval: 5_000,
   })
 }
 
@@ -41,16 +64,4 @@ export function useUpdatePlan() {
       queryClient.invalidateQueries({ queryKey: ["plan-review-count"] })
     },
   })
-}
-
-export interface Plan {
-  id: string
-  project_id: string
-  status: string
-  conversation_id: string | null
-  recommendation: Record<string, unknown> | null
-  decline_reason: string | null
-  created_at: string | null
-  updated_at: string | null
-  approved_at: string | null
 }

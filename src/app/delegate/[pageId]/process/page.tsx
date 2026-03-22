@@ -37,6 +37,7 @@ import {
   Plus,
   X,
   Users,
+  ClipboardList,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -1409,6 +1410,15 @@ export default function ProcessTaskPage() {
               elapsed={guidedPlanning.currentPhase?.elapsed ?? 0}
               isActive
             />
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                You can safely leave this page — generation continues in the background.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => router.push("/planning")}>
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Go to Planning Hub
+              </Button>
+            </div>
           </div>
         )}
 
