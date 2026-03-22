@@ -1,26 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-const MODAL_API_URL = process.env.NEXT_PUBLIC_MODAL_API_URL || ""
-
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const { createClient } = await import("@/lib/supabase/client")
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-      ...(options.headers as Record<string, string> | undefined),
-    },
-  })
-}
-
 export function usePlans(projectId: string) {
   return useQuery({
     queryKey: ["plans", projectId],
     queryFn: async () => {
-      const res = await fetchWithAuth(`${MODAL_API_URL}/projects/${projectId}/plans`)
+      const res = await fetch(`/api/plans?projectId=${projectId}`)
       if (!res.ok) throw new Error("Failed to fetch plans")
       const data = await res.json()
       return data.plans as Plan[]
@@ -40,8 +24,9 @@ export function useUpdatePlan() {
       status?: string
       decline_reason?: string
     }) => {
-      const res = await fetchWithAuth(`${MODAL_API_URL}/plans/${planId}`, {
+      const res = await fetch(`/api/plans/${planId}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
       if (!res.ok) {

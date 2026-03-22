@@ -10,8 +10,8 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-// New Supabase key naming: secret key (bypasses RLS) or publishable key (respects RLS)
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+// New Supabase key naming: service role key (bypasses RLS) or publishable key (respects RLS)
+const supabaseSecretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl) {
@@ -22,13 +22,13 @@ if (!supabaseUrl) {
 // Use secret key if available (bypasses RLS), otherwise use anon/publishable key
 const supabaseKey = supabaseSecretKey || supabaseAnonKey;
 if (!supabaseKey) {
-  console.error("Missing SUPABASE_SECRET_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  console.error("Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY");
   process.exit(1);
 }
 
 if (!supabaseSecretKey) {
-  console.warn("⚠️  No SUPABASE_SECRET_KEY found - using anon key (RLS applies)");
-  console.warn("   Add SUPABASE_SECRET_KEY to .env.local to bypass RLS for seeding\n");
+  console.warn("⚠️  No SUPABASE_SERVICE_ROLE_KEY found - using anon key (RLS applies)");
+  console.warn("   Add SUPABASE_SERVICE_ROLE_KEY to .env.local to bypass RLS for seeding\n");
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);

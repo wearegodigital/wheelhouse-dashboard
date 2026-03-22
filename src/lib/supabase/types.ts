@@ -587,6 +587,142 @@ export interface Database {
         Update: Partial<Omit<Database["public"]["Tables"]["project_notion_links"]["Row"], "id">>
         Relationships: []
       }
+      plans: {
+        Row: {
+          id: string
+          project_id: string
+          conversation_id: string | null
+          status: string
+          recommendation: Record<string, unknown> | null
+          decline_reason: string | null
+          created_at: string
+          updated_at: string
+          approved_at: string | null
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          conversation_id?: string | null
+          status?: string
+          recommendation?: Record<string, unknown> | null
+          decline_reason?: string | null
+          created_at?: string
+          updated_at?: string
+          approved_at?: string | null
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          conversation_id?: string | null
+          status?: string
+          recommendation?: Record<string, unknown> | null
+          decline_reason?: string | null
+          created_at?: string
+          updated_at?: string
+          approved_at?: string | null
+          deleted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "planning_conversations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      blockers: {
+        Row: {
+          id: string
+          task_id: string | null
+          sprint_id: string | null
+          project_id: string | null
+          title: string
+          description: string
+          blocker_type: string
+          status: string
+          input_schema: Record<string, unknown>
+          resolution: string | null
+          resolved_by: string | null
+          resolved_at: string | null
+          resolution_context: string | null
+          source_agent_id: string | null
+          source_error: string | null
+          failure_attempt: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          task_id?: string | null
+          sprint_id?: string | null
+          project_id?: string | null
+          title: string
+          description?: string
+          blocker_type?: string
+          status?: string
+          input_schema?: Record<string, unknown>
+          resolution?: string | null
+          resolved_by?: string | null
+          resolved_at?: string | null
+          resolution_context?: string | null
+          source_agent_id?: string | null
+          source_error?: string | null
+          failure_attempt?: number | null
+        }
+        Update: {
+          id?: string
+          task_id?: string | null
+          sprint_id?: string | null
+          project_id?: string | null
+          title?: string
+          description?: string
+          blocker_type?: string
+          status?: string
+          input_schema?: Record<string, unknown>
+          resolution?: string | null
+          resolved_by?: string | null
+          resolved_at?: string | null
+          resolution_context?: string | null
+          source_agent_id?: string | null
+          source_error?: string | null
+          failure_attempt?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blockers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blockers_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blockers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       project_summary: {
@@ -699,6 +835,8 @@ export type Repo = Database["public"]["Tables"]["repos"]["Row"]
 export type NotionTaskRow = Database["public"]["Tables"]["notion_tasks"]["Row"]
 export type ContextAttachment = Database["public"]["Tables"]["context_attachments"]["Row"]
 export type ProjectNotionLink = Database["public"]["Tables"]["project_notion_links"]["Row"]
+export type Plan = Database["public"]["Tables"]["plans"]["Row"]
+export type Blocker = Database["public"]["Tables"]["blockers"]["Row"]
 export type UserRole = "owner" | "admin" | "member" | "viewer"
 export type ActivityAction = "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"
 export type ActivityEntityType = "project" | "sprint" | "task" | "comment"

@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Update LOCAL conversation status (this stays in Supabase - not event-sourced)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (supabaseConversationId && supabaseUrl && supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey)
