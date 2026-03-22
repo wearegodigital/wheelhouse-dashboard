@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useProjects } from "@/hooks/useProjects"
 import { useSprints } from "@/hooks/useSprints"
 import type { TaskFilters as TaskFiltersType } from "@/types"
 import { Input } from "@/components/ui/input"
@@ -48,7 +47,6 @@ export function TaskFilters({
   className,
 }: TaskFiltersProps) {
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { data: projects } = useProjects()
   const { data: sprints } = useSprints(filters.projectId || "")
 
   const updateFilter = useCallback(
@@ -130,23 +128,6 @@ export function TaskFilters({
           </SelectContent>
         </Select>
 
-        {/* Project filter */}
-        <Select
-          value={filters.projectId || "all"}
-          onValueChange={(value) => updateFilter("projectId", value)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Project" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Projects</SelectItem>
-            {projects?.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         {/* Sprint filter (only when project selected) */}
         {filters.projectId && (
@@ -237,7 +218,7 @@ export function TaskFilters({
           )}
           {filters.projectId && (
             <FilterBadge
-              label={`Project: ${projects?.find((p) => p.id === filters.projectId)?.name || "..."}`}
+              label={`Project: ${filters.projectId}`}
               onRemove={() => updateFilter("projectId", undefined)}
             />
           )}

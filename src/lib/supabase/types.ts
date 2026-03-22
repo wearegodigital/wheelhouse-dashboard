@@ -641,6 +641,74 @@ export interface Database {
           }
         ]
       }
+      jobs: {
+        Row: {
+          id: string
+          plan_id: string | null
+          project_id: string | null
+          notion_task_id: string | null
+          repo_url: string
+          status: string
+          execution_pattern: string
+          distribution_mode: string
+          workers: number
+          task_breakdown: Record<string, unknown>
+          progress: Record<string, unknown> | null
+          error: string | null
+          started_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          plan_id?: string | null
+          project_id?: string | null
+          notion_task_id?: string | null
+          repo_url: string
+          status?: string
+          execution_pattern?: string
+          distribution_mode?: string
+          workers?: number
+          task_breakdown: Record<string, unknown>
+          progress?: Record<string, unknown> | null
+          error?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          plan_id?: string | null
+          project_id?: string | null
+          notion_task_id?: string | null
+          repo_url?: string
+          status?: string
+          execution_pattern?: string
+          distribution_mode?: string
+          workers?: number
+          task_breakdown?: Record<string, unknown>
+          progress?: Record<string, unknown> | null
+          error?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       blockers: {
         Row: {
           id: string
@@ -836,6 +904,7 @@ export type NotionTaskRow = Database["public"]["Tables"]["notion_tasks"]["Row"]
 export type ContextAttachment = Database["public"]["Tables"]["context_attachments"]["Row"]
 export type ProjectNotionLink = Database["public"]["Tables"]["project_notion_links"]["Row"]
 export type Plan = Database["public"]["Tables"]["plans"]["Row"]
+export type Job = Database["public"]["Tables"]["jobs"]["Row"]
 export type Blocker = Database["public"]["Tables"]["blockers"]["Row"]
 export type UserRole = "owner" | "admin" | "member" | "viewer"
 export type ActivityAction = "created" | "updated" | "deleted" | "started" | "completed" | "failed" | "commented"

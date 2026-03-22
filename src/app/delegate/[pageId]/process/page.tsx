@@ -2,29 +2,15 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { useQuery, useMutation } from "@tanstack/react-query"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { GitHubRepoPicker } from "@/components/repos/GitHubRepoPicker"
-import type { GitHubRepoSelection } from "@/components/repos/GitHubRepoPicker"
-import { useClients, useCreateClient } from "@/hooks/useClients"
-import { useRepos, useCreateRepo } from "@/hooks/useRepos"
-import { useProjects, useCreateProject } from "@/hooks/useProjects"
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,9 +20,7 @@ import {
   FolderOpen,
   Loader2,
   FileText,
-  Plus,
   X,
-  Users,
   ClipboardList,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -48,6 +32,7 @@ import { NotionTaskAccordion } from "@/components/planning/NotionTaskAccordion"
 import { PlanGenerationProgress } from "@/components/planning/PlanGenerationProgress"
 import type { DecompositionRecommendation } from "@/types"
 import { useToast } from "@/components/ui/toast"
+import { createProject as createProjectApi } from "@/lib/api/wheelhouse"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -347,173 +332,6 @@ function StepGranularity({
   )
 }
 
-// ─── Inline create forms ────────────────────────────────────────────────────────
-
-function InlineCreateClient({
-  onCreated,
-  onCancel,
-}: {
-  onCreated: (id: string) => void
-  onCancel: () => void
-}) {
-  const [name, setName] = useState("")
-  const [status, setStatus] = useState("active")
-  const [clientType, setClientType] = useState("project-based")
-  const createClient = useCreateClient()
-
-  const handleSubmit = async () => {
-    if (!name.trim()) return
-    const result = await createClient.mutateAsync({
-      name: name.trim(),
-      status,
-      client_type: clientType,
-    })
-    if (result.id) onCreated(result.id)
-  }
-
-  return (
-    <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-sm font-semibold text-primary">New Client</p>
-        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="space-y-2">
-        <Input
-          placeholder="Client name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-          autoFocus
-          className="h-8 text-sm"
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="on-hold">On Hold</SelectItem>
-              <SelectItem value="internal">Internal</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={clientType} onValueChange={setClientType}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="project-based">Project-based</SelectItem>
-              <SelectItem value="retainer">Retainer</SelectItem>
-              <SelectItem value="internal">Internal</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onCancel} className="h-7 text-xs">
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!name.trim() || createClient.isPending}
-          className="h-7 text-xs"
-        >
-          {createClient.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
-          Create Client
-        </Button>
-      </div>
-      {createClient.isError && (
-        <p className="text-xs text-destructive">{(createClient.error as Error)?.message}</p>
-      )}
-    </div>
-  )
-}
-
-function InlineCreateRepo({
-  clientId,
-  onCreated,
-  onCancel,
-}: {
-  clientId?: string
-  onCreated: (id: string) => void
-  onCancel: () => void
-}) {
-  const [name, setName] = useState("")
-  const [githubOrg, setGithubOrg] = useState("")
-  const [githubRepo, setGithubRepo] = useState("")
-  const [repoUrl, setRepoUrl] = useState("")
-  const [defaultBranch, setDefaultBranch] = useState("")
-  const createRepo = useCreateRepo()
-
-  function handlePickerSelect(selection: GitHubRepoSelection) {
-    setGithubOrg(selection.org)
-    setGithubRepo(selection.repo)
-    setRepoUrl(selection.repoUrl)
-    setDefaultBranch(selection.defaultBranch)
-    if (!name.trim() && selection.repo) {
-      setName(selection.repo)
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (!name.trim()) return
-    const result = await createRepo.mutateAsync({
-      name: name.trim(),
-      client_id: clientId || undefined,
-      github_org: githubOrg || undefined,
-      github_repo: githubRepo || undefined,
-      repo_url: repoUrl || undefined,
-      default_branch: defaultBranch || undefined,
-    })
-    if (result.id) onCreated(result.id)
-  }
-
-  return (
-    <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-sm font-semibold text-primary">New Repository</p>
-        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="space-y-3">
-        <Input
-          placeholder="Repo name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-          className="h-8 text-sm"
-        />
-        <GitHubRepoPicker
-          onSelect={handlePickerSelect}
-          initialOrg={githubOrg}
-          initialRepo={githubRepo}
-        />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onCancel} className="h-7 text-xs">
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!name.trim() || createRepo.isPending}
-          className="h-7 text-xs"
-        >
-          {createRepo.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
-          Create Repo
-        </Button>
-      </div>
-      {createRepo.isError && (
-        <p className="text-xs text-destructive">{(createRepo.error as Error)?.message}</p>
-      )}
-    </div>
-  )
-}
-
 // ─── Inline create project form ─────────────────────────────────────────────────
 
 function InlineCreateProject({
@@ -571,65 +389,26 @@ function InlineCreateProject({
 
 function StepTarget({
   granularity,
-  clientId,
-  repoId,
-  projectId,
+  repoUrl,
   newProjectName,
   newProjectDescription,
-  notionClientName,
-  onClientChange,
-  onRepoChange,
-  onProjectChange,
+  onRepoUrlChange,
   onNewProjectNameChange,
   onNewProjectDescriptionChange,
   onBack,
   onNext,
 }: {
   granularity: Granularity
-  clientId: string
-  repoId: string
-  projectId: string
+  repoUrl: string
   newProjectName: string
   newProjectDescription: string
-  notionClientName: string
-  onClientChange: (v: string) => void
-  onRepoChange: (v: string) => void
-  onProjectChange: (v: string) => void
+  onRepoUrlChange: (v: string) => void
   onNewProjectNameChange: (v: string) => void
   onNewProjectDescriptionChange: (v: string) => void
   onBack: () => void
   onNext: () => void
 }) {
-  const [showNewClient, setShowNewClient] = useState(false)
-  const [showNewRepo, setShowNewRepo] = useState(false)
-
-  const { data: clients, isLoading: clientsLoading } = useClients()
-  const { data: allRepos, isLoading: reposLoading } = useRepos()
-  const { data: projects, isLoading: projectsLoading } = useProjects()
-
-  // Auto-match client from Notion client_name on first render
-  const [autoMatchAttempted, setAutoMatchAttempted] = useState(false)
-  if (!autoMatchAttempted && !clientId && notionClientName && clients && clients.length > 0) {
-    const match = clients.find(
-      (c) => c.name.toLowerCase() === notionClientName.toLowerCase()
-    )
-    if (match) {
-      onClientChange(match.id)
-    }
-    setAutoMatchAttempted(true)
-  }
-  if (!autoMatchAttempted && clients && clients.length >= 0 && !notionClientName) {
-    setAutoMatchAttempted(true)
-  }
-
-  // Split repos: client's repos first, then others
-  const clientRepos = clientId ? allRepos?.filter((r) => r.client_id === clientId) ?? [] : []
-  const otherRepos = clientId
-    ? allRepos?.filter((r) => r.client_id !== clientId) ?? []
-    : allRepos ?? []
-
-  const isNewProject = projectId === "__new_project__"
-  const canProceed = !!repoId && (!isNewProject || !!newProjectName.trim())
+  const canProceed = !!repoUrl.trim()
 
   return (
     <div>
@@ -638,196 +417,35 @@ function StepTarget({
       </p>
 
       <div className="space-y-4">
-        {/* Client */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Client</label>
-          {!showNewClient ? (
-            <Select
-              value={clientId || "__none__"}
-              onValueChange={(v) => {
-                if (v === "__new__") {
-                  setShowNewClient(true)
-                  return
-                }
-                onClientChange(v === "__none__" ? "" : v)
-                onRepoChange("")
-              }}
-              disabled={clientsLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={clientsLoading ? "Loading..." : "Select client"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__new__">
-                  <span className="flex items-center gap-1.5 text-primary font-medium">
-                    <Plus className="h-3.5 w-3.5" />
-                    New Client
-                  </span>
-                </SelectItem>
-                <SelectItem value="__none__">
-                  <span className="text-muted-foreground">No client</span>
-                </SelectItem>
-                {clients?.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          {showNewClient && (
-            <InlineCreateClient
-              onCreated={(id) => {
-                onClientChange(id)
-                onRepoChange("")
-                setShowNewClient(false)
-              }}
-              onCancel={() => setShowNewClient(false)}
-            />
-          )}
-          {notionClientName && !clientId && !showNewClient && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <Users className="h-3 w-3" />
-              Notion task is linked to &ldquo;{notionClientName}&rdquo;
-            </p>
-          )}
-        </div>
-
-        {/* Repo */}
+        {/* GitHub Repo URL */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium">
-            Repository <span className="text-destructive">*</span>
+            GitHub Repository URL <span className="text-destructive">*</span>
           </label>
-          {!showNewRepo ? (
-            <Select
-              value={repoId || ""}
-              onValueChange={(v) => {
-                if (v === "__new__") {
-                  setShowNewRepo(true)
-                  return
-                }
-                onRepoChange(v)
-              }}
-              disabled={reposLoading}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={reposLoading ? "Loading..." : "Select repository"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__new__">
-                  <span className="flex items-center gap-1.5 text-primary font-medium">
-                    <Plus className="h-3.5 w-3.5" />
-                    New Repository
-                  </span>
-                </SelectItem>
-                {/* Client's repos first */}
-                {clientId && clientRepos.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>
-                      {clients?.find((c) => c.id === clientId)?.name ?? "Client"}
-                    </SelectLabel>
-                    {clientRepos.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        <span className="flex flex-col">
-                          <span>{r.name}</span>
-                          {r.github_org && r.github_repo && (
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {r.github_org}/{r.github_repo}
-                            </span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-                {/* All or other repos */}
-                {clientId && clientRepos.length > 0 && otherRepos.length > 0 && (
-                  <SelectSeparator />
-                )}
-                {otherRepos.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Other Repos</SelectLabel>
-                    {otherRepos.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        <span className="flex flex-col">
-                          <span>{r.name}</span>
-                          {r.github_org && r.github_repo && (
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {r.github_org}/{r.github_repo}
-                            </span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-              </SelectContent>
-            </Select>
-          ) : null}
-          {showNewRepo && (
-            <InlineCreateRepo
-              clientId={clientId || undefined}
-              onCreated={(id) => {
-                onRepoChange(id)
-                setShowNewRepo(false)
-              }}
-              onCancel={() => setShowNewRepo(false)}
-            />
-          )}
+          <Input
+            placeholder="https://github.com/org/repo"
+            value={repoUrl}
+            onChange={(e) => onRepoUrlChange(e.target.value)}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            The repository where this work will be implemented
+          </p>
         </div>
 
         {/* Project (sprint or project granularity) */}
         {(granularity === "sprint" || granularity === "project") && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">
-              Project{" "}
-              {isNewProject ? (
-                <span className="text-destructive">*</span>
-              ) : (
-                <span className="text-muted-foreground font-normal">(optional)</span>
-              )}
-            </label>
-            {!isNewProject ? (
-              <Select
-                value={projectId || "__none__"}
-                onValueChange={(v) => onProjectChange(v === "__none__" ? "" : v)}
-                disabled={projectsLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={projectsLoading ? "Loading..." : "Select or create new"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__new_project__">
-                    <span className="flex items-center gap-1.5 text-primary font-medium">
-                      <Plus className="h-3.5 w-3.5" />
-                      New Project
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="__none__">
-                    <span className="text-muted-foreground">No project</span>
-                  </SelectItem>
-                  {projects?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <InlineCreateProject
-                initialName={newProjectName}
-                initialDescription={newProjectDescription}
-                name={newProjectName}
-                description={newProjectDescription}
-                onNameChange={onNewProjectNameChange}
-                onDescriptionChange={onNewProjectDescriptionChange}
-                onCancel={() => onProjectChange("")}
-              />
-            )}
+            <label className="text-sm font-medium">Project details</label>
+            <InlineCreateProject
+              initialName={newProjectName}
+              initialDescription={newProjectDescription}
+              name={newProjectName}
+              description={newProjectDescription}
+              onNameChange={onNewProjectNameChange}
+              onDescriptionChange={onNewProjectDescriptionChange}
+              onCancel={() => {}}
+            />
           </div>
         )}
       </div>
@@ -907,9 +525,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function StepConfirm({
   pageId,
   granularity,
-  clientId,
-  repoId,
-  projectId,
+  repoUrl,
   newProjectName,
   newProjectDescription,
   imageUrls,
@@ -924,9 +540,7 @@ function StepConfirm({
 }: {
   pageId: string
   granularity: Granularity
-  clientId: string
-  repoId: string
-  projectId: string
+  repoUrl: string
   newProjectName: string
   newProjectDescription: string
   imageUrls: string[]
@@ -940,28 +554,6 @@ function StepConfirm({
   onProjectCreated?: (projectId: string) => void
 }) {
   const router = useRouter()
-  const { data: clients } = useClients()
-  const { data: allRepos } = useRepos()
-  const { data: projects } = useProjects()
-  const createProject = useCreateProject()
-
-  const clientName = clients?.find((c) => c.id === clientId)?.name ?? (clientId || "None")
-  const selectedRepo = allRepos?.find((r) => r.id === repoId)
-  const repoName = selectedRepo
-    ? selectedRepo.github_org && selectedRepo.github_repo
-      ? `${selectedRepo.name} (${selectedRepo.github_org}/${selectedRepo.github_repo})`
-      : selectedRepo.name
-    : repoId
-  const isNewProject = projectId === "__new_project__"
-  const projectDisplayName = isNewProject
-    ? newProjectName || "New Project"
-    : projectId
-    ? projects?.find((p) => p.id === projectId)?.name ?? projectId
-    : "None"
-
-  const selectedRepo2 = allRepos?.find((r) => r.id === repoId)
-  const defaultBranch = selectedRepo2?.default_branch || undefined
-
   const { addToast } = useToast()
   const isSubmittingRef = useRef(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -971,51 +563,34 @@ function StepConfirm({
       if (isSubmittingRef.current) throw new Error("Already submitting")
       isSubmittingRef.current = true
       setIsSubmitting(true)
-      // Step 1: Create project if needed
-      let targetProjectId = isNewProject ? "" : projectId
 
       const taskGranularityValue =
         taskGranularityLevel === "custom" ? taskGranularityCustom.trim() || "custom" : taskGranularityLevel
 
-      if (isNewProject && (granularity === "sprint" || granularity === "project")) {
-        const result = await createProject.mutateAsync({
+      let targetProjectId = ""
+
+      if (granularity === "sprint" || granularity === "project") {
+        const result = await createProjectApi({
           name: newProjectName.trim() || `Notion Task ${pageId.slice(0, 8)}`,
           description: newProjectDescription.trim() || undefined,
-          client_id: clientId || undefined,
-          repo_id: repoId || undefined,
+          repo_url: repoUrl || undefined,
           notion_id: pageId,
-          default_branch: defaultBranch,
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
         })
-        if (result.id) {
-          targetProjectId = result.id
-        }
-      } else if (!targetProjectId && (granularity === "sprint" || granularity === "project")) {
-        // No project selected — auto-create one
-        const result = await createProject.mutateAsync({
-          name: newProjectName.trim() || `Notion Task ${pageId.slice(0, 8)}`,
-          description: newProjectDescription.trim() || undefined,
-          client_id: clientId || undefined,
-          repo_id: repoId || undefined,
-          notion_id: pageId,
-          default_branch: defaultBranch,
-          planning_rigor: planningRigor,
-          task_granularity: taskGranularityValue,
-        })
+        if (!result.success) throw new Error(result.message || "Failed to create project")
         if (result.id) {
           targetProjectId = result.id
         }
       }
 
-      // Step 2: Mark as delegated via Notion API
+      // Mark as delegated via Notion API
       const delegateRes = await fetch(`/api/notion/${pageId}/delegate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           granularity,
-          client_id: clientId || null,
-          repo_id: repoId || null,
+          repo_url: repoUrl || null,
           project_id: targetProjectId || null,
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
@@ -1039,7 +614,7 @@ function StepConfirm({
       } else if (pid) {
         router.push(`/projects/${pid}`)
       } else {
-        router.push("/projects")
+        router.push("/planning")
       }
     },
     onError: () => {
@@ -1127,10 +702,9 @@ function StepConfirm({
         </CardHeader>
         <CardContent>
           <SummaryRow label="Granularity" value={granularity.charAt(0).toUpperCase() + granularity.slice(1)} />
-          <SummaryRow label="Client" value={clientName} />
-          <SummaryRow label="Repository" value={repoName} />
+          <SummaryRow label="Repository" value={repoUrl || "None"} />
           {(granularity === "sprint" || granularity === "project") && (
-            <SummaryRow label="Project" value={projectDisplayName} />
+            <SummaryRow label="Project" value={newProjectName || "Auto-named"} />
           )}
           <SummaryRow
             label="Planning Rigor"
@@ -1193,7 +767,7 @@ function StepConfirm({
 const STEP_DESCRIPTIONS: Record<number, string> = {
   1: "Review the Notion task you're about to delegate",
   2: "Choose how to structure this work for execution",
-  3: "Select where this work belongs in the hierarchy",
+  3: "Select where this work belongs",
   4: "Review settings and confirm",
 }
 
@@ -1207,9 +781,7 @@ export default function ProcessTaskPage() {
   // Wizard state
   const [step, setStep] = useState(1)
   const [granularity, setGranularity] = useState<Granularity>("task")
-  const [selectedClientId, setSelectedClientId] = useState("")
-  const [selectedRepoId, setSelectedRepoId] = useState("")
-  const [selectedProjectId, setSelectedProjectId] = useState("")
+  const [repoUrl, setRepoUrl] = useState("")
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
   const [planningRigor, setPlanningRigor] = useState<PlanningRigor>("review")
@@ -1217,12 +789,12 @@ export default function ProcessTaskPage() {
   const [taskGranularityCustom, setTaskGranularityCustom] = useState("")
   const [imageUrls, setImageUrls] = useState<string[]>([])
   // Captured from Notion data in Step 1 to pre-populate later steps
-  const [notionClientName, setNotionClientName] = useState("")
   const [notionTaskData, setNotionTaskData] = useState<NotionTaskData | null>(null)
 
   // Planning phase state
   const [planningPhase, setPlanningPhase] = useState<"wizard" | "generating" | "guided" | "review" | "done">("wizard")
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
+  const [showFallback, setShowFallback] = useState(false)
 
   const guidedPlanning = useGuidedPlanning({
     notionTaskId: pageId,
@@ -1234,9 +806,8 @@ export default function ProcessTaskPage() {
       notion_task_type: notionTaskData?.task_type || "",
       notion_estimated_time: notionTaskData?.estimated_time || null,
       notion_due_date: notionTaskData?.due_date || "",
-      client_name: notionClientName || notionTaskData?.client_name || "",
-      client_id: selectedClientId,
-      repo_id: selectedRepoId,
+      client_name: notionTaskData?.client_name || "",
+      repo_url: repoUrl,
       project_id: createdProjectId ?? undefined,
     },
   })
@@ -1248,6 +819,15 @@ export default function ProcessTaskPage() {
     }
   }, [guidedPlanning.planId, planningPhase, router])
 
+  // Show fallback link after 10s if planId hasn't arrived yet
+  useEffect(() => {
+    if (planningPhase === "generating" && !guidedPlanning.planId) {
+      const timer = setTimeout(() => setShowFallback(true), 10_000)
+      return () => clearTimeout(timer)
+    }
+    setShowFallback(false)
+  }, [planningPhase, guidedPlanning.planId])
+
   // Start guided planning when entering "guided" or "generating" phase
   useEffect(() => {
     if ((planningPhase === "guided" || planningPhase === "generating") && guidedPlanning.status === "idle") {
@@ -1256,7 +836,7 @@ export default function ProcessTaskPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planningPhase, guidedPlanning.status, guidedPlanning.startPlanning])
 
-  // In "generating" phase: once session token is ready (steps_complete or step_ready), generate immediately
+  // In "generating" phase: once session token is ready, generate immediately
   useEffect(() => {
     if (
       planningPhase === "generating" &&
@@ -1312,9 +892,6 @@ export default function ProcessTaskPage() {
     if (data.description && !newProjectDescription) {
       setNewProjectDescription(data.description)
     }
-    if (data.client_name && !notionClientName) {
-      setNotionClientName(data.client_name)
-    }
   }
 
   function handleProjectCreated(pid: string) {
@@ -1369,15 +946,10 @@ export default function ProcessTaskPage() {
             {step === 3 && (
               <StepTarget
                 granularity={granularity}
-                clientId={selectedClientId}
-                repoId={selectedRepoId}
-                projectId={selectedProjectId}
+                repoUrl={repoUrl}
                 newProjectName={newProjectName}
                 newProjectDescription={newProjectDescription}
-                notionClientName={notionClientName}
-                onClientChange={setSelectedClientId}
-                onRepoChange={setSelectedRepoId}
-                onProjectChange={setSelectedProjectId}
+                onRepoUrlChange={setRepoUrl}
                 onNewProjectNameChange={setNewProjectName}
                 onNewProjectDescriptionChange={setNewProjectDescription}
                 onBack={() => setStep(2)}
@@ -1389,9 +961,7 @@ export default function ProcessTaskPage() {
               <StepConfirm
                 pageId={pageId}
                 granularity={granularity}
-                clientId={selectedClientId}
-                repoId={selectedRepoId}
-                projectId={selectedProjectId}
+                repoUrl={repoUrl}
                 newProjectName={newProjectName}
                 newProjectDescription={newProjectDescription}
                 imageUrls={imageUrls}
@@ -1426,6 +996,14 @@ export default function ProcessTaskPage() {
                 Go to Planning Hub
               </Button>
             </div>
+            {showFallback && (
+              <div className="mt-4 text-center">
+                <p className="text-sm text-muted-foreground mb-2">Taking longer than expected.</p>
+                <Link href="/planning" className="text-primary underline text-sm">
+                  View all plans in Planning Hub →
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -1457,6 +1035,10 @@ export default function ProcessTaskPage() {
               <PlanReview
                 plan={guidedPlanning.plan as DecompositionRecommendation}
                 conversationId={guidedPlanning.conversationId ?? undefined}
+                onReject={() => {
+                  // Re-enter generating phase to trigger regeneration
+                  setPlanningPhase("generating")
+                }}
                 onApprove={async (plan) => {
                   try {
                     const supabase = createClient()
@@ -1483,15 +1065,8 @@ export default function ProcessTaskPage() {
                     router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
                   } catch (e) {
                     console.error("Approve failed:", e)
-                    // Fall back to redirect so user isn't stuck
                     router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
                   }
-                }}
-                onReject={() => {
-                  // reset() clears the plan; re-entering "guided" restarts the wizard
-                  // The decline API has already sent feedback to the backend if conversationId was present
-                  guidedPlanning.reset()
-                  setPlanningPhase("guided")
                 }}
               />
             </div>

@@ -8,29 +8,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useProjects } from "@/hooks/useProjects"
 import { AddTaskChat } from "@/components/tasks/AddTaskChat"
-import { Layers, ListTodo, GitBranch } from "lucide-react"
+import { Layers, ListTodo } from "lucide-react"
 
 type DecompositionLevel = "project" | "sprint" | "task"
 
 interface TaskFormData {
   title: string
   description: string
-  projectId: string | "new"
-  newProjectName?: string
-  newProjectRepo?: string
   decompositionLevel: DecompositionLevel
 }
 
 export default function AddTaskPage() {
   const router = useRouter()
-  const { data: projects, isLoading: projectsLoading } = useProjects()
 
   const [formData, setFormData] = useState<TaskFormData>({
     title: "",
     description: "",
-    projectId: "",
     decompositionLevel: "task",
   })
   const [showChat, setShowChat] = useState(false)
@@ -56,18 +50,6 @@ export default function AddTaskPage() {
 
     message += `\n\nI'd like this decomposed ${levelDescriptions[formData.decompositionLevel]}.`
 
-    if (formData.projectId === "new" && formData.newProjectName) {
-      message += `\n\nThis should be part of a new project called "${formData.newProjectName}"`
-      if (formData.newProjectRepo) {
-        message += ` with repository: ${formData.newProjectRepo}`
-      }
-    } else if (formData.projectId && formData.projectId !== "new") {
-      const project = projects?.find(p => p.id === formData.projectId)
-      if (project) {
-        message += `\n\nThis should be added to the existing project: "${project.name}"`
-      }
-    }
-
     message += "\n\nPlease analyze this and suggest an appropriate breakdown. If you think a different decomposition level would be more appropriate, please let me know."
 
     setChatInitialMessage(message)
@@ -91,7 +73,7 @@ export default function AddTaskPage() {
       >
         <AddTaskChat
           initialMessage={chatInitialMessage}
-          projectId={formData.projectId !== "new" ? formData.projectId : undefined}
+          projectId={undefined}
           suggestedLevel={formData.decompositionLevel}
           onComplete={() => router.push("/tasks")}
         />
@@ -139,60 +121,6 @@ export default function AddTaskPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Project</CardTitle>
-            <CardDescription>
-              Choose an existing project or create a new one.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="project">Project</Label>
-              <select
-                id="project"
-                value={formData.projectId}
-                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">{projectsLoading ? "Loading projects..." : "Select a project"}</option>
-                <option value="new">+ Create new project</option>
-                {projects?.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {formData.projectId === "new" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="newProjectName">New Project Name</Label>
-                  <Input
-                    id="newProjectName"
-                    placeholder="e.g., My App"
-                    value={formData.newProjectName || ""}
-                    onChange={(e) => setFormData({ ...formData, newProjectName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newProjectRepo">Repository URL (optional)</Label>
-                  <div className="flex items-center gap-2">
-                    <GitBranch className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="newProjectRepo"
-                      placeholder="https://github.com/username/repo"
-                      value={formData.newProjectRepo || ""}
-                      onChange={(e) => setFormData({ ...formData, newProjectRepo: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Decomposition Level</CardTitle>
             <CardDescription>
               How should this be broken down? The Orchestrator may suggest a different level if more appropriate.
@@ -220,7 +148,7 @@ export default function AddTaskPage() {
                 level="task"
                 title="Single Task"
                 description="One atomic unit of work. Best for small fixes or additions."
-                icon={<GitBranch className="h-5 w-5" />}
+                icon={<ListTodo className="h-5 w-5" />}
                 selected={formData.decompositionLevel === "task"}
                 onSelect={() => setFormData({ ...formData, decompositionLevel: "task" })}
               />

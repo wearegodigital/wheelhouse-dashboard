@@ -177,14 +177,10 @@ export interface ProjectListItem {
   name: string;
   description: string;
   status: ProjectStatus;
-  client_id?: string;
-  repo_id?: string;
   notion_id?: string;
   planning_rigor?: string;
   task_granularity?: string;
   created_at?: string;
-  client_name?: string;
-  repo_name?: string;
   sprint_count?: number;
   sprints_completed?: number;
   task_count?: number;
@@ -197,8 +193,6 @@ export interface ProjectDetail {
   name: string;
   description: string;
   status: ProjectStatus;
-  client_id?: string;
-  repo_id?: string;
   notion_id?: string;
   planning_rigor?: string;
   task_granularity?: string;
@@ -206,10 +200,6 @@ export interface ProjectDetail {
   repo_url?: string;
   default_branch?: string;
   created_at?: string;
-  client_name?: string;
-  repo_name?: string;
-  github_org?: string;
-  github_repo?: string;
   sprint_count?: number;
   sprints_completed?: number;
   task_count?: number;
@@ -404,72 +394,6 @@ export interface ExecutionStatusResponse {
   sprints?: SprintStatusDetail[];
 }
 
-/** Shape returned by GET /clients (each item in the clients array). */
-export interface ClientListItem {
-  id: string;
-  name: string;
-  status: string;
-  client_type: string;
-  notion_id?: string;
-  contact_email?: string;
-  created_at?: string;
-}
-
-/** Shape returned by GET /clients/{id}. */
-export interface ClientDetail {
-  id: string;
-  name: string;
-  status: string;
-  client_type: string;
-  notion_id?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  metadata?: Record<string, unknown>;
-  created_at?: string;
-  updated_at?: string;
-}
-
-/** Response shape for POST /clients. */
-export interface CreateClientResponse {
-  success: boolean;
-  client_id: string;
-  message: string;
-}
-
-/** Shape returned by GET /repos (each item in the repos array). */
-export interface RepoListItem {
-  id: string;
-  client_id?: string;
-  name: string;
-  github_org: string;
-  github_repo: string;
-  default_branch?: string;
-  repo_url?: string;
-  created_at?: string;
-}
-
-/** Shape returned by GET /repos/{id}. */
-export interface RepoDetail {
-  id: string;
-  client_id?: string;
-  name: string;
-  github_org: string;
-  github_repo: string;
-  default_branch?: string;
-  repo_url?: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-  created_at?: string;
-  updated_at?: string;
-}
-
-/** Response shape for POST /repos. */
-export interface CreateRepoResponse {
-  success: boolean;
-  repo_id: string;
-  message: string;
-}
-
 /** Shape for a single Notion task row from Supabase cache. */
 export interface NotionTaskResponse {
   id: string;
@@ -605,8 +529,6 @@ export interface CreateProjectRequest {
   name: string;
   description?: string;
   repo_url?: string;
-  client_id?: string;
-  repo_id?: string;
   planning_rigor?: string;
   task_granularity?: string;
   granularity_instructions?: string;
@@ -649,5 +571,39 @@ export interface PlanDetail {
   approved_at?: string;
   recommendation?: Record<string, unknown>;
   decline_reason?: string;
+}
+
+/** Shape for jobs in list responses. */
+export interface JobListItem {
+  id: string;
+  plan_id?: string;
+  project_id?: string;
+  status: string;
+  execution_pattern?: string;
+  distribution_mode?: string;
+  repo_url?: string;
+  notion_task_id?: string;
+  created_at?: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
+/** Full job detail including task breakdown and progress. */
+export interface JobDetail {
+  id: string;
+  plan_id?: string;
+  project_id?: string;
+  status: string;
+  execution_pattern?: string;
+  distribution_mode?: string;
+  repo_url?: string;
+  notion_task_id?: string;
+  created_at?: string;
+  started_at?: string;
+  completed_at?: string;
+  task_breakdown?: Record<string, unknown>;
+  progress?: Record<string, unknown>;
+  error?: string;
+  workers?: number;
 }
 

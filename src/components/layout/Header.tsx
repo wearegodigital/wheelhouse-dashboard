@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Settings, LogOut, Trash2, Users, GitBranch, Send, ClipboardList } from "lucide-react"
+import { Settings, LogOut, Trash2, Send, ClipboardList, Play } from "lucide-react"
 import { usePlanReviewCount } from "@/hooks/useAllPlans"
 
 export function Header() {
@@ -46,15 +46,6 @@ export function Header() {
           <Link href="/" className={navLinkClasses}>
             Home
           </Link>
-          <Link href="/clients" className={navLinkClasses}>
-            <span className="flex items-center gap-1"><Users className="h-4 w-4" />Clients</span>
-          </Link>
-          <Link href="/repos" className={navLinkClasses}>
-            <span className="flex items-center gap-1"><GitBranch className="h-4 w-4" />Repos</span>
-          </Link>
-          <Link href="/projects" className={navLinkClasses}>
-            Projects
-          </Link>
           <Link href="/planning" className={navLinkClasses}>
             <span className="flex items-center gap-1 relative">
               <ClipboardList className="h-4 w-4" />
@@ -65,6 +56,9 @@ export function Header() {
                 </span>
               )}
             </span>
+          </Link>
+          <Link href="/jobs" className={navLinkClasses}>
+            <span className="flex items-center gap-1"><Play className="h-4 w-4" />Jobs</span>
           </Link>
           <Link href="/delegate" className={navLinkClasses}>
             <span className="flex items-center gap-1"><Send className="h-4 w-4" />Delegate</span>

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { StatsOverview } from "@/components/dashboard/StatsOverview"
-import { OpenProjects } from "@/components/dashboard/OpenProjects"
 import { RecentNotionTasks } from "@/components/dashboard/RecentNotionTasks"
 
 export default function HomePage() {
@@ -28,10 +27,6 @@ export default function HomePage() {
         <RecentNotionTasks />
       </div>
 
-      {/* Open Projects */}
-      <div className="mt-8">
-        <OpenProjects />
-      </div>
     </PageContainer>
   )
 }
