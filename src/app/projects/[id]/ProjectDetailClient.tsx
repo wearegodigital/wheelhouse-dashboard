@@ -116,13 +116,14 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
     const run = async () => {
       try {
         const supabase = createClient()
-        const { data } = await (supabase
-          .from("planning_conversations" as unknown as string)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from("planning_conversations")
           .select("id, recommendation, status")
           .eq("project_id", initialProject.id)
           .not("recommendation", "is", null)
           .order("created_at", { ascending: false })
-          .limit(1) as unknown as { data: Array<{ id: string; recommendation: unknown; status: string }> | null })
+          .limit(1)
         if (cancelled) return
         const row = (data as Array<{ id: string; recommendation: unknown; status: string }> | null)?.[0]
         if (row?.recommendation) {
