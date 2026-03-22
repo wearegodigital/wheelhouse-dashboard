@@ -18,6 +18,10 @@ import {
   Loader2,
   RefreshCw,
   Users,
+  ClipboardList,
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +48,8 @@ import { useDeleteProject, useUpdateProject } from "@/hooks/useProjects";
 import { useClient } from "@/hooks/useClients";
 import { useRepo } from "@/hooks/useRepos";
 import { useExecutionStatus } from "@/hooks/useExecutionStatus";
+import { usePlans, useUpdatePlan } from "@/hooks/usePlans";
+import type { Plan } from "@/hooks/usePlans";
 import { useToast } from "@/components/ui/toast";
 import { getStatusBadgeVariant } from "@/lib/status";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -58,7 +64,7 @@ interface ProjectDetailClientProps {
 export function ProjectDetailClient({ project: initialProject }: ProjectDetailClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "planning" | "attachments" | "blockers">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sprints" | "planning" | "attachments" | "blockers" | "plans">("overview");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [notionMarked, setNotionMarked] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -77,6 +83,11 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
   const [newSprintDescription, setNewSprintDescription] = useState("");
   const [addSprintPending, setAddSprintPending] = useState(false);
 
+  // Plans tab state
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null)
+  const [decliningPlanId, setDecliningPlanId] = useState<string | null>(null)
+  const [declineReasonValue, setDeclineReasonValue] = useState("")
+
   // Saved plan state (for Planning tab)
   const [savedPlan, setSavedPlan] = useState<{ id: string; recommendation: DecompositionRecommendation; status: string } | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
@@ -84,7 +95,12 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
   const deleteProject = useDeleteProject();
   const updateProject = useUpdateProject();
+  const updatePlan = useUpdatePlan();
   const { addToast } = useToast();
+
+  // Plans data
+  const { data: plans, isLoading: plansLoading } = usePlans(initialProject.id)
+  const pendingPlan = plans?.find((p) => p.status === "pending_review") ?? null
 
   const isRunning = initialProject.status === "running";
   const isCompleted = initialProject.status === "completed";
@@ -305,6 +321,29 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        {client && initialProject.client_id ? (
+          <Link href={`/clients/${initialProject.client_id}`} className="hover:text-foreground transition-colors">
+            {client.name}
+          </Link>
+        ) : (
+          <Link href="/clients" className="hover:text-foreground transition-colors">
+            Clients
+          </Link>
+        )}
+        <span>/</span>
+        {repo && initialProject.repo_id ? (
+          <Link href={`/repos/${initialProject.repo_id}`} className="hover:text-foreground transition-colors">
+            {repo.name}
+          </Link>
+        ) : (
+          <span>Project</span>
+        )}
+        <span>/</span>
+        <span className="text-foreground font-medium truncate max-w-[200px]">{initialProject.name}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2 flex-1 min-w-0">
@@ -518,10 +557,34 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
         </CardContent>
       </Card>
 
+      {/* Pending plan banner — T10 */}
+      {pendingPlan && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Plan awaiting review</p>
+              <p className="text-xs text-muted-foreground">
+                Created{" "}
+                {pendingPlan.created_at
+                  ? new Date(pendingPlan.created_at).toLocaleDateString()
+                  : "recently"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setActiveTab("plans")}
+          >
+            Review Plan
+          </Button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="border-b">
         <nav className="flex gap-6">
-          {(["overview", "sprints", "planning", "attachments", "blockers"] as const).map((tab) => (
+          {(["overview", "sprints", "planning", "attachments", "blockers", "plans"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -537,6 +600,8 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
                 ? "Attachments"
                 : tab === "blockers"
                 ? "Blockers"
+                : tab === "plans"
+                ? `Plans${plans && plans.length > 0 ? ` (${plans.length})` : ""}`
                 : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
@@ -878,6 +943,280 @@ export function ProjectDetailClient({ project: initialProject }: ProjectDetailCl
       {activeTab === "blockers" && (
         <ErrorBoundary>
           <BlockerQueue projectId={initialProject.id} />
+        </ErrorBoundary>
+      )}
+
+      {/* Plans tab — T8, T9, T10 */}
+      {activeTab === "plans" && (
+        <ErrorBoundary>
+          <div className="space-y-4">
+            {plansLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : !plans || plans.length === 0 ? (
+              <Card className="border-dashed border-2">
+                <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                  <div className="rounded-full bg-muted p-4">
+                    <ClipboardList className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-base">No plans yet</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Plans are generated during the planning process. Go to the Planning tab to
+                      start a conversation with the Orchestrator.
+                    </p>
+                  </div>
+                  <Button variant="default" size="sm" onClick={() => setActiveTab("planning")}>
+                    Go to Planning
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              plans.map((plan: Plan) => {
+                const isExpanded = expandedPlanId === plan.id
+                const isDeclining = decliningPlanId === plan.id
+
+                const statusBadge = (status: string) => {
+                  if (status === "approved")
+                    return (
+                      <Badge className="bg-green-500/15 text-green-500 border-green-500/30 hover:bg-green-500/20">
+                        <Check className="h-3 w-3 mr-1" />
+                        Approved
+                      </Badge>
+                    )
+                  if (status === "declined")
+                    return (
+                      <Badge className="bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/20">
+                        <X className="h-3 w-3 mr-1" />
+                        Declined
+                      </Badge>
+                    )
+                  if (status === "pending_review")
+                    return (
+                      <Badge className="bg-yellow-500/15 text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20">
+                        Pending Review
+                      </Badge>
+                    )
+                  return <Badge variant="outline">{status}</Badge>
+                }
+
+                const renderRecommendation = (rec: Record<string, unknown>) => {
+                  // Try to render as a sprint/task tree
+                  const sprints = Array.isArray(rec.sprints) ? rec.sprints as Array<{
+                    name?: string
+                    description?: string
+                    tasks?: Array<{ name?: string; description?: string }>
+                  }> : null
+
+                  if (sprints) {
+                    return (
+                      <div className="space-y-3">
+                        {sprints.map((sprint, si) => (
+                          <div key={si} className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Sprint {si + 1}
+                              </span>
+                              <span className="text-sm font-semibold">{sprint.name}</span>
+                            </div>
+                            {sprint.description && (
+                              <p className="text-xs text-muted-foreground pl-4">{sprint.description}</p>
+                            )}
+                            {Array.isArray(sprint.tasks) && sprint.tasks.length > 0 && (
+                              <ul className="pl-4 space-y-1">
+                                {sprint.tasks.map((task, ti) => (
+                                  <li key={ti} className="flex items-start gap-2 text-sm">
+                                    <span className="text-muted-foreground mt-0.5 shrink-0">•</span>
+                                    <span>
+                                      <span className="font-medium">{task.name}</span>
+                                      {task.description && (
+                                        <span className="text-muted-foreground"> — {task.description}</span>
+                                      )}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
+
+                  // Fallback: formatted JSON
+                  return (
+                    <pre className="text-xs bg-muted rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-words">
+                      {JSON.stringify(rec, null, 2)}
+                    </pre>
+                  )
+                }
+
+                return (
+                  <Card key={plan.id} className={plan.status === "pending_review" ? "border-yellow-500/30" : undefined}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {statusBadge(plan.status)}
+                          <span className="text-xs text-muted-foreground">
+                            Created{" "}
+                            {plan.created_at
+                              ? new Date(plan.created_at).toLocaleDateString()
+                              : "—"}
+                          </span>
+                          {plan.approved_at && (
+                            <span className="text-xs text-muted-foreground">
+                              Approved{" "}
+                              {new Date(plan.approved_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                          aria-label={isExpanded ? "Collapse plan" : "Expand plan"}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Action buttons — T9 */}
+                      <div className="flex items-center gap-2 flex-wrap pt-1">
+                        {plan.status === "pending_review" && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              disabled={updatePlan.isPending}
+                              onClick={async () => {
+                                try {
+                                  await updatePlan.mutateAsync({ planId: plan.id, status: "approved" })
+                                  addToast("Plan approved.", "success")
+                                } catch (e) {
+                                  addToast(
+                                    e instanceof Error ? e.message : "Failed to approve plan.",
+                                    "error"
+                                  )
+                                }
+                              }}
+                            >
+                              <Check className="h-3.5 w-3.5 mr-1.5" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-500 border-red-500/30 hover:bg-red-500/10"
+                              onClick={() => {
+                                setDecliningPlanId(isDeclining ? null : plan.id)
+                                setDeclineReasonValue("")
+                              }}
+                            >
+                              <X className="h-3.5 w-3.5 mr-1.5" />
+                              Decline
+                            </Button>
+                          </>
+                        )}
+                        {plan.status === "declined" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={updatePlan.isPending}
+                            onClick={async () => {
+                              try {
+                                await updatePlan.mutateAsync({
+                                  planId: plan.id,
+                                  status: "pending_review",
+                                })
+                                addToast("Plan resubmitted for review.", "success")
+                              } catch (e) {
+                                addToast(
+                                  e instanceof Error ? e.message : "Failed to resubmit plan.",
+                                  "error"
+                                )
+                              }
+                            }}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                            Resubmit
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Decline reason input */}
+                      {isDeclining && (
+                        <div className="space-y-2 pt-2">
+                          <textarea
+                            value={declineReasonValue}
+                            onChange={(e) => setDeclineReasonValue(e.target.value)}
+                            rows={3}
+                            placeholder="Reason for declining (optional)..."
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={updatePlan.isPending}
+                              onClick={async () => {
+                                try {
+                                  await updatePlan.mutateAsync({
+                                    planId: plan.id,
+                                    status: "declined",
+                                    decline_reason: declineReasonValue.trim() || undefined,
+                                  })
+                                  setDecliningPlanId(null)
+                                  setDeclineReasonValue("")
+                                  addToast("Plan declined.", "success")
+                                } catch (e) {
+                                  addToast(
+                                    e instanceof Error ? e.message : "Failed to decline plan.",
+                                    "error"
+                                  )
+                                }
+                              }}
+                            >
+                              Confirm Decline
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setDecliningPlanId(null)
+                                setDeclineReasonValue("")
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Declined reason display */}
+                      {plan.status === "declined" && plan.decline_reason && (
+                        <p className="text-xs text-muted-foreground bg-red-500/5 border border-red-500/20 rounded px-3 py-2 mt-2">
+                          <span className="font-medium text-red-400">Decline reason: </span>
+                          {plan.decline_reason}
+                        </p>
+                      )}
+                    </CardHeader>
+
+                    {isExpanded && plan.recommendation && (
+                      <CardContent className="pt-0 pb-4">
+                        <div className="border-t pt-4">
+                          {renderRecommendation(plan.recommendation)}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                )
+              })
+            )}
+          </div>
         </ErrorBoundary>
       )}
 

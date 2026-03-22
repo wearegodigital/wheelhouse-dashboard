@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Settings, LogOut, Trash2, Users, GitBranch } from "lucide-react"
+import { Settings, LogOut, Trash2, Users, GitBranch, Send } from "lucide-react"
 
 export function Header() {
   const { user, signOut, isLoading } = useAuth()
@@ -52,6 +52,9 @@ export function Header() {
           </Link>
           <Link href="/projects" className={navLinkClasses}>
             Projects
+          </Link>
+          <Link href="/delegate" className={navLinkClasses}>
+            <span className="flex items-center gap-1"><Send className="h-4 w-4" />Delegate</span>
           </Link>
         </nav>
 

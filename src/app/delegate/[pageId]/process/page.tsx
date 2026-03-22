@@ -32,16 +32,12 @@ import {
   Zap,
   Layers,
   FolderOpen,
-  GitBranch,
-  Trophy,
-  ChevronsRight,
   Loader2,
   FileText,
   Plus,
   X,
   Users,
 } from "lucide-react"
-import type { ExecutionPattern, DistributionMode } from "@/lib/supabase/types"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { useGuidedPlanning } from "@/hooks/useGuidedPlanning"
@@ -893,55 +889,6 @@ const TASK_GRANULARITY_OPTIONS: { value: TaskGranularityLevel; label: string; de
   },
 ]
 
-// ─── Pattern options ────────────────────────────────────────────────────────────
-
-interface PatternOption {
-  value: ExecutionPattern
-  label: string
-  description: string
-  icon: React.ReactNode
-}
-
-const PATTERN_OPTIONS: PatternOption[] = [
-  {
-    value: "sequential",
-    label: "Standard",
-    description: "One attempt per task, straightforward execution.",
-    icon: <ChevronsRight className="h-4 w-4" />,
-  },
-  {
-    value: "tournament",
-    label: "Tournament",
-    description: "Multiple agents compete on the same task. Best solution wins. Higher cost, better quality.",
-    icon: <Trophy className="h-4 w-4" />,
-  },
-  {
-    value: "cascade",
-    label: "Cascade",
-    description: "Start with a cheaper model, escalate to stronger models only if the task fails.",
-    icon: <GitBranch className="h-4 w-4" />,
-  },
-]
-
-interface DistributionOption {
-  value: DistributionMode
-  label: string
-  description: string
-}
-
-const DISTRIBUTION_OPTIONS: DistributionOption[] = [
-  {
-    value: "single",
-    label: "One at a Time",
-    description: "Tasks processed in order by a single worker. (Single mode)",
-  },
-  {
-    value: "swarm",
-    label: "Parallel Workers",
-    description: "Multiple workers claim tasks from a shared pool simultaneously. (Swarm mode)",
-  },
-]
-
 // ─── Summary row ───────────────────────────────────────────────────────────────
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -963,16 +910,10 @@ function StepConfirm({
   projectId,
   newProjectName,
   newProjectDescription,
-  pattern,
-  distribution,
-  workerCount,
   imageUrls,
   planningRigor,
   taskGranularityLevel,
   taskGranularityCustom,
-  onPatternChange,
-  onDistributionChange,
-  onWorkerCountChange,
   onPlanningRigorChange,
   onTaskGranularityLevelChange,
   onTaskGranularityCustomChange,
@@ -986,16 +927,10 @@ function StepConfirm({
   projectId: string
   newProjectName: string
   newProjectDescription: string
-  pattern: ExecutionPattern
-  distribution: DistributionMode
-  workerCount: number
   imageUrls: string[]
   planningRigor: PlanningRigor
   taskGranularityLevel: TaskGranularityLevel
   taskGranularityCustom: string
-  onPatternChange: (v: ExecutionPattern) => void
-  onDistributionChange: (v: DistributionMode) => void
-  onWorkerCountChange: (v: number) => void
   onPlanningRigorChange: (v: PlanningRigor) => void
   onTaskGranularityLevelChange: (v: TaskGranularityLevel) => void
   onTaskGranularityCustomChange: (v: string) => void
@@ -1080,14 +1015,10 @@ function StepConfirm({
           client_id: clientId || null,
           repo_id: repoId || null,
           project_id: targetProjectId || null,
-          pattern,
-          distribution,
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
-          worker_count: distribution === "swarm" ? workerCount : undefined,
           metadata: {
             ...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
-            worker_count: distribution === "swarm" ? workerCount : undefined,
           },
         }),
       })
@@ -1187,99 +1118,6 @@ function StepConfirm({
         )}
       </div>
 
-      {/* Pattern selector */}
-      <div className="mb-5">
-        <p className="text-sm font-medium">Execution Pattern</p>
-        <p className="text-xs text-muted-foreground mb-3">How each individual task is executed</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {PATTERN_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onPatternChange(opt.value)}
-              className={cn(
-                "text-left rounded-lg border p-3 transition-all",
-                "hover:border-primary/50 hover:bg-accent/30",
-                pattern === opt.value
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-card"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <div
-                  className={cn(
-                    "rounded p-1 transition-colors",
-                    pattern === opt.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {opt.icon}
-                </div>
-                <span className="text-sm font-semibold">{opt.label}</span>
-                {pattern === opt.value && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary ml-auto" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug">
-                {opt.description}
-              </p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Distribution selector */}
-      <div className="mb-6">
-        <p className="text-sm font-medium">Distribution</p>
-        <p className="text-xs text-muted-foreground mb-3">How tasks within a sprint are distributed across agents</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {DISTRIBUTION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onDistributionChange(opt.value)}
-              className={cn(
-                "text-left rounded-lg border p-3 transition-all",
-                "hover:border-primary/50 hover:bg-accent/30",
-                distribution === opt.value
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-card"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-sm font-semibold">{opt.label}</span>
-                {distribution === opt.value && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary ml-auto" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug">
-                {opt.description}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {/* Worker count — shown only when swarm selected */}
-        {distribution === "swarm" && (
-          <div className="mt-3 flex items-center gap-3">
-            <label className="text-sm text-muted-foreground shrink-0">Worker count</label>
-            <Input
-              type="number"
-              min={2}
-              max={10}
-              value={workerCount}
-              onChange={(e) => {
-                const v = parseInt(e.target.value, 10)
-                if (!isNaN(v)) onWorkerCountChange(Math.min(10, Math.max(2, v)))
-              }}
-              className="h-8 w-20 text-sm"
-            />
-            <span className="text-xs text-muted-foreground">agents (2–10)</span>
-          </div>
-        )}
-      </div>
-
       {/* Summary */}
       <Card>
         <CardHeader className="pb-2">
@@ -1308,15 +1146,6 @@ function StepConfirm({
               taskGranularityLevel === "custom"
                 ? taskGranularityCustom.trim() || "Custom"
                 : TASK_GRANULARITY_OPTIONS.find((o) => o.value === taskGranularityLevel)?.label ?? taskGranularityLevel
-            }
-          />
-          <SummaryRow label="Pattern" value={pattern.charAt(0).toUpperCase() + pattern.slice(1)} />
-          <SummaryRow
-            label="Distribution"
-            value={
-              distribution === "swarm"
-                ? `Swarm (${workerCount} workers)`
-                : "Single Worker"
             }
           />
         </CardContent>
@@ -1363,7 +1192,7 @@ const STEP_DESCRIPTIONS: Record<number, string> = {
   1: "Review the Notion task you're about to delegate",
   2: "Choose how to structure this work for execution",
   3: "Select where this work belongs in the hierarchy",
-  4: "Choose an execution pattern and confirm",
+  4: "Review settings and confirm",
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
@@ -1381,9 +1210,6 @@ export default function ProcessTaskPage() {
   const [selectedProjectId, setSelectedProjectId] = useState("")
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
-  const [pattern, setPattern] = useState<ExecutionPattern>("sequential")
-  const [distribution, setDistribution] = useState<DistributionMode>("single")
-  const [workerCount, setWorkerCount] = useState(3)
   const [planningRigor, setPlanningRigor] = useState<PlanningRigor>("review")
   const [taskGranularityLevel, setTaskGranularityLevel] = useState<TaskGranularityLevel>("standard")
   const [taskGranularityCustom, setTaskGranularityCustom] = useState("")
@@ -1559,16 +1385,10 @@ export default function ProcessTaskPage() {
                 projectId={selectedProjectId}
                 newProjectName={newProjectName}
                 newProjectDescription={newProjectDescription}
-                pattern={pattern}
-                distribution={distribution}
-                workerCount={workerCount}
                 imageUrls={imageUrls}
                 planningRigor={planningRigor}
                 taskGranularityLevel={taskGranularityLevel}
                 taskGranularityCustom={taskGranularityCustom}
-                onPatternChange={setPattern}
-                onDistributionChange={setDistribution}
-                onWorkerCountChange={setWorkerCount}
                 onPlanningRigorChange={setPlanningRigor}
                 onTaskGranularityLevelChange={setTaskGranularityLevel}
                 onTaskGranularityCustomChange={setTaskGranularityCustom}
