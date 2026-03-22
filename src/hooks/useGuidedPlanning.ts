@@ -315,6 +315,25 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
                 } else if (data.recommendations) {
                   plan = data.recommendations
                 }
+                // Handle done event — stream finished
+                if (data.done === true) {
+                  break
+                }
+                // Handle actions_taken (fallback — backend builds recommendation from these)
+                if (data.actions_taken && Array.isArray(data.actions_taken)) {
+                  for (const action of data.actions_taken) {
+                    if (action.type === "file_created" && action.name?.includes("APPROVED_PLAN")) {
+                      try {
+                        const planContent = JSON.parse(action.content || "{}")
+                        if (planContent.sprints || planContent.project) {
+                          plan = planContent
+                        }
+                      } catch {
+                        // Not valid JSON, skip
+                      }
+                    }
+                  }
+                }
                 // Handle explicit error events from the backend
                 if (data.type === "error") {
                   throw new Error(data.error || data.detail || "Backend error during generation")
@@ -345,6 +364,25 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
               plan = data.recommendations
             } else if (data.recommendations) {
               plan = data.recommendations
+            }
+            // Handle done event
+            if (data.done === true) {
+              break
+            }
+            // Handle actions_taken (fallback — backend builds recommendation from these)
+            if (data.actions_taken && Array.isArray(data.actions_taken)) {
+              for (const action of data.actions_taken) {
+                if (action.type === "file_created" && action.name?.includes("APPROVED_PLAN")) {
+                  try {
+                    const planContent = JSON.parse(action.content || "{}")
+                    if (planContent.sprints || planContent.project) {
+                      plan = planContent
+                    }
+                  } catch {
+                    // Not valid JSON, skip
+                  }
+                }
+              }
             }
           } catch {
             // Skip non-JSON lines
