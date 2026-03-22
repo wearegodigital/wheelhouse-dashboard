@@ -623,3 +623,27 @@ export interface StatsOverviewResponse {
   notion_tasks_to_delegate?: number;
 }
 
+/** Shape for plans in list responses. */
+export interface PlanListItem {
+  id: string;
+  project_id: string;
+  status: string;
+  conversation_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  approved_at?: string;
+}
+
+/** Full plan detail including recommendation. */
+export interface PlanDetail {
+  id: string;
+  project_id: string;
+  status: string;
+  conversation_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  approved_at?: string;
+  recommendation?: Record<string, unknown>;
+  decline_reason?: string;
+}
+
