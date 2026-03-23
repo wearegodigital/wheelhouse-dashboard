@@ -9,9 +9,9 @@ interface CreateProjectBody {
   description?: string
   repo_url?: string
   default_branch?: string
-  client_id?: string
-  repo_id?: string
   notion_id?: string
+  planning_rigor?: string
+  task_granularity?: string
 }
 
 interface CreateSprintBody {
@@ -64,9 +64,9 @@ async function supabaseFallback(
           description: p.description || "",
           repo_url: p.repo_url || "",
           default_branch: p.default_branch || "main",
-          client_id: p.client_id || null,
-          repo_id: p.repo_id || null,
           notion_id: p.notion_id || null,
+          planning_rigor: p.planning_rigor || "review",
+          task_granularity: p.task_granularity || "standard",
           status: "draft" as const,
           metadata: {},
         })
@@ -203,9 +203,9 @@ export async function POST(request: NextRequest) {
           description: body.description || "",
           repo_url: body.repo_url || "",
           default_branch: body.default_branch || "main",
-          client_id: body.client_id,
-          repo_id: body.repo_id,
           notion_id: body.notion_id,
+          planning_rigor: body.planning_rigor,
+          task_granularity: body.task_granularity,
         }
         break
       case "sprints":
