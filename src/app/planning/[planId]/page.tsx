@@ -386,13 +386,13 @@ export default function PlanDetailPage() {
   const [declineReason, setDeclineReason] = useState("")
 
   // Live elapsed timer for generating plans
-  const [elapsed, setElapsed] = useState(0)
+  const computeElapsed = () => {
+    if (plan?.status !== "generating" || !plan.created_at) return 0
+    return Math.floor((Date.now() - new Date(plan.created_at).getTime()) / 1000)
+  }
+  const [elapsed, setElapsed] = useState(computeElapsed)
   useEffect(() => {
-    if (plan?.status !== "generating" || !plan.created_at) {
-      setElapsed(0)
-      return
-    }
-    setElapsed(Math.floor((Date.now() - new Date(plan.created_at).getTime()) / 1000))
+    if (plan?.status !== "generating" || !plan.created_at) return
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - new Date(plan.created_at!).getTime()) / 1000))
     }, 1000)
