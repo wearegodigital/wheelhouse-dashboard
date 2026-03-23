@@ -33,6 +33,7 @@ import { PlanGenerationProgress } from "@/components/planning/PlanGenerationProg
 import type { DecompositionRecommendation } from "@/types"
 import { useToast } from "@/components/ui/toast"
 import { createProject as createProjectApi } from "@/lib/api/wheelhouse"
+import { GitHubRepoPicker, type GitHubRepoSelection } from "@/components/repos/GitHubRepoPicker"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -393,6 +394,7 @@ function StepTarget({
   newProjectName,
   newProjectDescription,
   onRepoUrlChange,
+  onBranchChange,
   onNewProjectNameChange,
   onNewProjectDescriptionChange,
   onBack,
@@ -403,6 +405,7 @@ function StepTarget({
   newProjectName: string
   newProjectDescription: string
   onRepoUrlChange: (v: string) => void
+  onBranchChange?: (v: string) => void
   onNewProjectNameChange: (v: string) => void
   onNewProjectDescriptionChange: (v: string) => void
   onBack: () => void
@@ -417,20 +420,17 @@ function StepTarget({
       </p>
 
       <div className="space-y-4">
-        {/* GitHub Repo URL */}
+        {/* GitHub Repository */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium">
-            GitHub Repository URL <span className="text-destructive">*</span>
+            GitHub Repository <span className="text-destructive">*</span>
           </label>
-          <Input
-            placeholder="https://github.com/org/repo"
-            value={repoUrl}
-            onChange={(e) => onRepoUrlChange(e.target.value)}
-            className="font-mono text-sm"
+          <GitHubRepoPicker
+            onSelect={(selection) => {
+              onRepoUrlChange(selection.repoUrl)
+              if (onBranchChange) onBranchChange(selection.defaultBranch || selection.branch)
+            }}
           />
-          <p className="text-xs text-muted-foreground">
-            The repository where this work will be implemented
-          </p>
         </div>
 
         {/* Project (sprint or project granularity) */}
@@ -526,6 +526,7 @@ function StepConfirm({
   pageId,
   granularity,
   repoUrl,
+  defaultBranch,
   newProjectName,
   newProjectDescription,
   imageUrls,
@@ -541,6 +542,7 @@ function StepConfirm({
   pageId: string
   granularity: Granularity
   repoUrl: string
+  defaultBranch?: string
   newProjectName: string
   newProjectDescription: string
   imageUrls: string[]
@@ -574,6 +576,7 @@ function StepConfirm({
           name: newProjectName.trim() || `Notion Task ${pageId.slice(0, 8)}`,
           description: newProjectDescription.trim() || undefined,
           repo_url: repoUrl || undefined,
+          default_branch: defaultBranch || undefined,
           notion_id: pageId,
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
@@ -782,6 +785,7 @@ export default function ProcessTaskPage() {
   const [step, setStep] = useState(1)
   const [granularity, setGranularity] = useState<Granularity>("task")
   const [repoUrl, setRepoUrl] = useState("")
+  const [defaultBranch, setDefaultBranch] = useState("")
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
   const [planningRigor, setPlanningRigor] = useState<PlanningRigor>("review")
@@ -950,6 +954,7 @@ export default function ProcessTaskPage() {
                 newProjectName={newProjectName}
                 newProjectDescription={newProjectDescription}
                 onRepoUrlChange={setRepoUrl}
+                onBranchChange={(v) => setDefaultBranch(v)}
                 onNewProjectNameChange={setNewProjectName}
                 onNewProjectDescriptionChange={setNewProjectDescription}
                 onBack={() => setStep(2)}
@@ -962,6 +967,7 @@ export default function ProcessTaskPage() {
                 pageId={pageId}
                 granularity={granularity}
                 repoUrl={repoUrl}
+                defaultBranch={defaultBranch}
                 newProjectName={newProjectName}
                 newProjectDescription={newProjectDescription}
                 imageUrls={imageUrls}
