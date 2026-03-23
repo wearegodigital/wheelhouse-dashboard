@@ -24,6 +24,15 @@ export async function GET(request: NextRequest) {
     const resp = await fetch(url, {
       headers: { "Authorization": `Bearer ${process.env.MODAL_API_KEY || ""}` },
     })
+    const contentType = resp.headers.get("content-type") || ""
+    if (!resp.ok || !contentType.includes("application/json")) {
+      const text = await resp.text().catch(() => "Unknown error")
+      console.error(`GitHub proxy: ${resp.status} from Modal:`, text)
+      return NextResponse.json(
+        { error: resp.status === 408 ? "Request timed out — Modal may be cold-starting" : "GitHub API unavailable" },
+        { status: resp.status >= 400 ? resp.status : 502 },
+      )
+    }
     const data = await resp.json()
     return NextResponse.json(data, { status: resp.status })
   } catch (error) {
