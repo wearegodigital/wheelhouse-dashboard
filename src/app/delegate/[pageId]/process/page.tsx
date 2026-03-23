@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,7 +19,6 @@ import {
   FolderOpen,
   Loader2,
   FileText,
-  X,
   ClipboardList,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -333,81 +331,18 @@ function StepGranularity({
   )
 }
 
-// ─── Inline create project form ─────────────────────────────────────────────────
-
-function InlineCreateProject({
-  initialName,
-  initialDescription,
-  name,
-  description,
-  onNameChange,
-  onDescriptionChange,
-  onCancel,
-}: {
-  initialName: string
-  initialDescription: string
-  name: string
-  description: string
-  onNameChange: (v: string) => void
-  onDescriptionChange: (v: string) => void
-  onCancel: () => void
-}) {
-  return (
-    <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-sm font-semibold text-primary">New Project</p>
-        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="space-y-2">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Project name</label>
-          <Input
-            placeholder={initialName || "Project name"}
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            autoFocus
-            className="h-8 text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Description</label>
-          <Textarea
-            placeholder={initialDescription || "What is this project about?"}
-            value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            className="text-sm resize-none"
-            rows={3}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Step 3: Target ────────────────────────────────────────────────────────────
 
 function StepTarget({
-  granularity,
   repoUrl,
-  newProjectName,
-  newProjectDescription,
   onRepoUrlChange,
   onBranchChange,
-  onNewProjectNameChange,
-  onNewProjectDescriptionChange,
   onBack,
   onNext,
 }: {
-  granularity: Granularity
   repoUrl: string
-  newProjectName: string
-  newProjectDescription: string
   onRepoUrlChange: (v: string) => void
   onBranchChange?: (v: string) => void
-  onNewProjectNameChange: (v: string) => void
-  onNewProjectDescriptionChange: (v: string) => void
   onBack: () => void
   onNext: () => void
 }) {
@@ -432,22 +367,6 @@ function StepTarget({
             }}
           />
         </div>
-
-        {/* Project (sprint or project granularity) */}
-        {(granularity === "sprint" || granularity === "project") && (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Project details</label>
-            <InlineCreateProject
-              initialName={newProjectName}
-              initialDescription={newProjectDescription}
-              name={newProjectName}
-              description={newProjectDescription}
-              onNameChange={onNewProjectNameChange}
-              onDescriptionChange={onNewProjectDescriptionChange}
-              onCancel={() => {}}
-            />
-          </div>
-        )}
       </div>
 
       <NavButtons
@@ -707,7 +626,7 @@ function StepConfirm({
           <SummaryRow label="Granularity" value={granularity.charAt(0).toUpperCase() + granularity.slice(1)} />
           <SummaryRow label="Repository" value={repoUrl || "None"} />
           {(granularity === "sprint" || granularity === "project") && (
-            <SummaryRow label="Project" value={newProjectName || "Auto-named"} />
+            <SummaryRow label="Project" value={newProjectName || pageId.slice(0, 8)} />
           )}
           <SummaryRow
             label="Planning Rigor"
@@ -950,14 +869,9 @@ export default function ProcessTaskPage() {
 
             {step === 3 && (
               <StepTarget
-                granularity={granularity}
                 repoUrl={repoUrl}
-                newProjectName={newProjectName}
-                newProjectDescription={newProjectDescription}
                 onRepoUrlChange={setRepoUrl}
                 onBranchChange={(v) => setDefaultBranch(v)}
-                onNewProjectNameChange={setNewProjectName}
-                onNewProjectDescriptionChange={setNewProjectDescription}
                 onBack={() => setStep(2)}
                 onNext={() => setStep(4)}
               />
