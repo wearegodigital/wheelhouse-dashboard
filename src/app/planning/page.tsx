@@ -442,7 +442,7 @@ export default function PlanningPage() {
   return (
     <PageContainer
       title="Planning Hub"
-      description="All plans across your projects"
+      description="All plans"
     >
       <Tabs defaultValue="review">
         <TabsList className="mb-6">

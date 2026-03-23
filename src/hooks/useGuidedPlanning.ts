@@ -120,6 +120,7 @@ function reducer(state: GuidedPlanningState, action: GuidedAction): GuidedPlanni
 
 interface UseGuidedPlanningOptions {
   notionTaskId?: string
+  repoUrl?: string
   goal?: string
   context?: Record<string, unknown>
 }
@@ -268,13 +269,37 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
 
+      // Create plan record directly in Supabase (bypasses Modal for instant persistence)
+      let planId: string | null = null
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: planRecord, error: planError } = await (supabase as any)
+          .from("plans")
+          .insert({
+            status: "generating",
+            repo_url: options.repoUrl || options.context?.repo_url || "",
+            notion_task_id: options.notionTaskId || null,
+          })
+          .select()
+          .single()
+
+        if (planError) {
+          console.error("[Planning] Failed to create plan record:", planError)
+        } else {
+          planId = planRecord.id
+          dispatch({ type: "PLAN_ID_RECEIVED", planId: planRecord.id })
+        }
+      } catch (err) {
+        console.error("[Planning] Plan record creation error:", err)
+      }
+
       const resp = await fetch("/api/planning/guided/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ session_token: state.sessionToken }),
+        body: JSON.stringify({ session_token: state.sessionToken, plan_id: planId }),
         signal: controller.signal,
       })
 
@@ -452,7 +477,8 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
     } finally {
       clearTimeout(overallTimeout)
     }
-  }, [state.sessionToken, state.conversationId, state.planId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.sessionToken, state.conversationId, state.planId, options.repoUrl, options.notionTaskId])
 
   const reset = useCallback(() => {
     dispatch({ type: "RESET" })

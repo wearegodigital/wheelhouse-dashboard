@@ -289,7 +289,7 @@ export default function JobsPage() {
   return (
     <PageContainer
       title="Jobs"
-      description="Execution jobs across your projects"
+      description="All execution jobs"
     >
       <Tabs defaultValue="pending">
         <TabsList className="mb-6">

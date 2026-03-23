@@ -611,7 +611,7 @@ function StepConfirm({
       return { projectId: targetProjectId }
     },
     onSuccess: ({ projectId: pid }) => {
-      addToast("Project created successfully", "success")
+      addToast("Plan submitted successfully", "success")
       if (onProjectCreated) {
         onProjectCreated(pid || "")
       } else if (pid) {
@@ -802,6 +802,7 @@ export default function ProcessTaskPage() {
 
   const guidedPlanning = useGuidedPlanning({
     notionTaskId: pageId,
+    repoUrl: repoUrl,
     goal: newProjectName,
     context: {
       notion_title: notionTaskData?.title || newProjectName,
