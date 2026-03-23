@@ -959,7 +959,8 @@ export default function ProcessTaskPage() {
                 plan={guidedPlanning.plan as DecompositionRecommendation}
                 conversationId={guidedPlanning.conversationId ?? undefined}
                 onReject={() => {
-                  // Re-enter generating phase to trigger regeneration
+                  // Reset hook state to idle so startPlanning() can re-fire
+                  guidedPlanning.reset()
                   setPlanningPhase("generating")
                 }}
                 onApprove={async (plan) => {

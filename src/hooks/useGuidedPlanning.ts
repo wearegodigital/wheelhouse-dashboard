@@ -257,11 +257,11 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
     dispatch({ type: "GENERATING" })
 
     const controller = new AbortController()
-    // Overall 5-minute timeout for the entire generation
+    // Overall 10-minute timeout (clone + analyze + generate can take a while)
     const overallTimeout = setTimeout(() => {
       controller.abort()
-      dispatch({ type: "ERROR", error: "Plan generation timed out after 5 minutes. Please try again." })
-    }, 5 * 60 * 1000)
+      dispatch({ type: "ERROR", error: "Plan generation timed out after 10 minutes. Please try again." })
+    }, 10 * 60 * 1000)
 
     let planId: string | null = null
     try {
