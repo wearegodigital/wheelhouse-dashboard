@@ -736,12 +736,14 @@ export default function ProcessTaskPage() {
     },
   })
 
-  // Redirect to plan detail page when plan_id is received during generation
+  // Redirect to plan detail page once generation completes (plan_ready) or errors
+  // We wait for plan_ready instead of redirecting immediately on planId, because
+  // the SSE stream needs to finish and update the Supabase record first.
   useEffect(() => {
-    if (guidedPlanning.planId && planningPhase === "generating") {
+    if (guidedPlanning.planId && (guidedPlanning.status === "plan_ready" || guidedPlanning.status === "error")) {
       router.push(`/planning/${guidedPlanning.planId}`)
     }
-  }, [guidedPlanning.planId, planningPhase, router])
+  }, [guidedPlanning.planId, guidedPlanning.status, router])
 
   // Show fallback link after 10s if planId hasn't arrived yet
   useEffect(() => {

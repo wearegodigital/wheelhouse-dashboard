@@ -263,6 +263,7 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       dispatch({ type: "ERROR", error: "Plan generation timed out after 5 minutes. Please try again." })
     }, 5 * 60 * 1000)
 
+    let planId: string | null = null
     try {
       const { createClient } = await import("@/lib/supabase/client")
       const supabase = createClient()
@@ -270,7 +271,6 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       const token = session?.access_token
 
       // Create plan record directly in Supabase (bypasses Modal for instant persistence)
-      let planId: string | null = null
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: planRecord, error: planError } = await (supabase as any)
@@ -464,6 +464,25 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       }
 
       if (plan) {
+        // Persist recommendation + status to Supabase so Planning Hub can see it
+        if (planId) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: updateError } = await (supabase as any)
+              .from("plans")
+              .update({
+                status: "pending_review",
+                recommendation: plan,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", planId)
+            if (updateError) {
+              console.error("[Planning] Failed to update plan record:", updateError)
+            }
+          } catch (err) {
+            console.error("[Planning] Plan record update error:", err)
+          }
+        }
         dispatch({ type: "PLAN_READY", plan })
       } else {
         dispatch({ type: "ERROR", error: "Plan generation completed but no plan was returned. The backend may have encountered an error. Please try again." })
@@ -472,6 +491,19 @@ export function useGuidedPlanning(options: UseGuidedPlanningOptions = {}) {
       if (controller.signal.aborted) {
         // Already dispatched timeout error above, or component unmounted
         return
+      }
+      // Mark plan as failed in Supabase so it doesn't stay "generating" forever
+      if (planId) {
+        try {
+          const { createClient: cc } = await import("@/lib/supabase/client")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (cc() as any)
+            .from("plans")
+            .update({ status: "draft", updated_at: new Date().toISOString() })
+            .eq("id", planId)
+        } catch {
+          // Best-effort cleanup
+        }
       }
       dispatch({ type: "ERROR", error: (e as Error).message })
     } finally {

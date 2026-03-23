@@ -436,6 +436,54 @@ function PlanTabPanel({
   )
 }
 
+// ─── All plans (no status filter) ─────────────────────────────────────────────
+
+function AllPlansPanel() {
+  const { data: plans, isLoading, isError } = useAllPlans()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <p className="text-sm text-muted-foreground">Failed to load plans.</p>
+      </div>
+    )
+  }
+
+  if (!plans || plans.length === 0) {
+    return (
+      <Card className="border-dashed border-2">
+        <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+          <div className="rounded-full bg-muted p-4">
+            <ClipboardList className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-semibold text-base">No plans yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Plans will appear here once you start delegating tasks.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {plans.map((plan) => (
+        <PlanCard key={plan.id} plan={plan} />
+      ))}
+    </div>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function PlanningPage() {
@@ -444,13 +492,18 @@ export default function PlanningPage() {
       title="Planning Hub"
       description="All plans"
     >
-      <Tabs defaultValue="review">
+      <Tabs defaultValue="all">
         <TabsList className="mb-6">
+          <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="review">Review</TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="declined">Declined</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all">
+          <AllPlansPanel />
+        </TabsContent>
 
         <TabsContent value="active">
           <PlanTabPanel
