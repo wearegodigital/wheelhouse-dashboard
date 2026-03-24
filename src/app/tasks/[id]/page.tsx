@@ -46,13 +46,13 @@ export default async function TaskPage({ params }: TaskPageProps) {
   const backLink = task.sprint_id
     ? `/sprints/${task.sprint_id}`
     : task.project_id
-    ? `/projects/${task.project_id}`
+    ? `/jobs/${task.project_id}`
     : "/tasks";
 
   const backLabel = task.sprint_id
     ? task.sprint_name || "Sprint"
     : task.project_id
-    ? task.project_name || "Project"
+    ? task.project_name || "Job"
     : "Tasks";
 
   return (

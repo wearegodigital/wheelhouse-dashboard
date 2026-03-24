@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import type { ExecutionPattern, DistributionMode } from "@/types";
 
 interface ExecutionControlsProps {
-  level: "project" | "sprint" | "task";
+  level: "project" | "job" | "sprint" | "task";
   id: string;
   status: string;
   onStatusChange?: () => void;

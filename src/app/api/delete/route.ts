@@ -15,7 +15,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const entityType = searchParams.get("type") // projects, sprints, tasks, clients, repos
+  const entityType = searchParams.get("type") // jobs, sprints, tasks, plans
   const entityId = searchParams.get("id")
   const cascade = searchParams.get("cascade") === "true"
 
@@ -26,7 +26,7 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
-  if (!["projects", "sprints", "tasks", "clients", "repos"].includes(entityType)) {
+  if (!["jobs", "sprints", "tasks", "plans"].includes(entityType)) {
     return NextResponse.json(
       { success: false, message: "Invalid entity type" },
       { status: 400 }
@@ -35,7 +35,7 @@ export async function DELETE(request: NextRequest) {
 
   // Try Modal API first (for projects created through Modal/JSONL pipeline)
   // Only attempt Modal for entity types it knows about
-  if (MODAL_API_URL && ["projects", "sprints", "tasks"].includes(entityType)) {
+  if (MODAL_API_URL && ["jobs", "sprints", "tasks"].includes(entityType)) {
     try {
       const params = new URLSearchParams()
       if (cascade) params.append("cascade", "true")
@@ -93,100 +93,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const now = new Date().toISOString()
     // Use typed objects per table to satisfy Supabase typed client
-    const projectSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
+    const jobSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
     const sprintSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
     const taskSoftDelete = { deleted_at: now, deleted_by: 'dashboard-user', status: 'deleted' as const, updated_at: now }
-    const clientSoftDelete = { deleted_at: now, updated_at: now }
-    const repoSoftDelete = { deleted_at: now, updated_at: now }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any
 
-    if (cascade && entityType === "clients") {
-      // Get repo IDs for this client
-      const { data: repos } = await db
-        .from("repos")
-        .select("id")
-        .eq("client_id", entityId)
-        .is("deleted_at", null)
-
-      const repoRows = repos as { id: string }[] | null
-      if (repoRows && repoRows.length > 0) {
-        const repoIds = repoRows.map((r) => r.id)
-
-        // Get project IDs for these repos
-        const { data: projects } = await db
-          .from("projects")
-          .select("id")
-          .in("repo_id", repoIds)
-          .is("deleted_at", null)
-
-        const projectRows = projects as { id: string }[] | null
-        if (projectRows && projectRows.length > 0) {
-          const projectIds = projectRows.map((p) => p.id)
-
-          // Get sprint IDs for these projects
-          const { data: sprints } = await supabase
-            .from("sprints")
-            .select("id")
-            .in("project_id", projectIds)
-            .is("deleted_at", null)
-
-          const sprintRows = sprints as { id: string }[] | null
-          if (sprintRows && sprintRows.length > 0) {
-            const sprintIds = sprintRows.map((s) => s.id)
-            // Delete FK-dependent rows first: events and agents referencing these tasks/sprints
-            await supabase.from("tasks").update(taskSoftDelete).in("sprint_id", sprintIds)
-          }
-
-          // Soft delete tasks directly linked to projects (no sprint)
-          await supabase.from("tasks").update(taskSoftDelete).in("project_id", projectIds)
-          // Soft delete sprints
-          await supabase.from("sprints").update(sprintSoftDelete).in("project_id", projectIds)
-          // Soft delete projects
-          await supabase.from("projects").update(projectSoftDelete).in("id", projectIds)
-        }
-
-        // Soft delete repos
-        await db.from("repos").update(repoSoftDelete).in("id", repoIds)
-      }
-    }
-
-    if (cascade && entityType === "repos") {
-      // Get project IDs for this repo
-      const { data: projects } = await db
-        .from("projects")
-        .select("id")
-        .eq("repo_id", entityId)
-        .is("deleted_at", null)
-
-      const projectRows = projects as { id: string }[] | null
-      if (projectRows && projectRows.length > 0) {
-        const projectIds = projectRows.map((p) => p.id)
-
-        // Get sprint IDs for these projects
-        const { data: sprints } = await supabase
-          .from("sprints")
-          .select("id")
-          .in("project_id", projectIds)
-          .is("deleted_at", null)
-
-        const sprintRows = sprints as { id: string }[] | null
-        if (sprintRows && sprintRows.length > 0) {
-          const sprintIds = sprintRows.map((s) => s.id)
-          await supabase.from("tasks").update(taskSoftDelete).in("sprint_id", sprintIds)
-        }
-
-        // Soft delete tasks directly linked to projects (no sprint)
-        await supabase.from("tasks").update(taskSoftDelete).in("project_id", projectIds)
-        // Soft delete sprints
-        await supabase.from("sprints").update(sprintSoftDelete).in("project_id", projectIds)
-        // Soft delete projects
-        await supabase.from("projects").update(projectSoftDelete).in("id", projectIds)
-      }
-    }
-
-    if (cascade && entityType === "projects") {
-      // Get sprint IDs for this project
+    if (cascade && entityType === "jobs") {
+      // Get sprint IDs for this job
       const { data: sprints } = await supabase
         .from("sprints")
         .select("id")
@@ -202,10 +116,10 @@ export async function DELETE(request: NextRequest) {
         await supabase.from("sprints").update(sprintSoftDelete).eq("project_id", entityId)
       }
 
-      // Also soft delete tasks directly linked to project (no sprint)
+      // Also soft delete tasks directly linked to job (no sprint)
       await supabase.from("tasks").update(taskSoftDelete).eq("project_id", entityId)
 
-      // Soft delete planning conversations for this project
+      // Soft delete planning conversations for this job
       await supabase.from("planning_conversations").delete().eq("project_id", entityId)
     }
 
@@ -215,8 +129,8 @@ export async function DELETE(request: NextRequest) {
 
     // Soft delete the entity itself — use literal table names to satisfy typed client
     let deleteError: { message: string } | null = null
-    if (entityType === "projects") {
-      const { error } = await supabase.from("projects").update(projectSoftDelete).eq("id", entityId)
+    if (entityType === "jobs") {
+      const { error } = await db.from("jobs").update(jobSoftDelete).eq("id", entityId)
       deleteError = error
     } else if (entityType === "sprints") {
       const { error } = await supabase.from("sprints").update(sprintSoftDelete).eq("id", entityId)
@@ -224,11 +138,8 @@ export async function DELETE(request: NextRequest) {
     } else if (entityType === "tasks") {
       const { error } = await supabase.from("tasks").update(taskSoftDelete).eq("id", entityId)
       deleteError = error
-    } else if (entityType === "clients") {
-      const { error } = await db.from("clients").update(clientSoftDelete).eq("id", entityId)
-      deleteError = error
-    } else if (entityType === "repos") {
-      const { error } = await db.from("repos").update(repoSoftDelete).eq("id", entityId)
+    } else if (entityType === "plans") {
+      const { error } = await db.from("plans").update({ deleted_at: now, updated_at: now }).eq("id", entityId)
       deleteError = error
     }
 

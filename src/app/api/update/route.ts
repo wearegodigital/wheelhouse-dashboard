@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/server"
 
 const MODAL_API_URL = process.env.MODAL_API_URL || ""
 
-type EntityType = "projects" | "sprints" | "tasks" | "clients" | "repos"
+type EntityType = "jobs" | "sprints" | "tasks" | "plans"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
     const entityType = body.type as EntityType
     const entityId = body.id
 
-    if (!entityType || !["projects", "sprints", "tasks", "clients", "repos"].includes(entityType)) {
+    if (!entityType || !["jobs", "sprints", "tasks", "plans"].includes(entityType)) {
       return NextResponse.json(
         { success: false, message: "Invalid or missing entity type" },
         { status: 400 }
@@ -53,13 +53,12 @@ export async function PUT(request: NextRequest) {
     const payload: Record<string, unknown> = {}
 
     switch (entityType) {
-      case "projects":
+      case "jobs":
         if (body.name !== undefined) payload.name = body.name
         if (body.description !== undefined) payload.description = body.description
         if (body.repo_url !== undefined) payload.repo_url = body.repo_url
         if (body.status !== undefined) payload.status = body.status
-        if (body.client_id !== undefined) payload.client_id = body.client_id
-        if (body.repo_id !== undefined) payload.repo_id = body.repo_id
+        if (body.plan_id !== undefined) payload.plan_id = body.plan_id
         if (body.notion_id !== undefined) payload.notion_id = body.notion_id
         if (body.default_branch !== undefined) payload.default_branch = body.default_branch
         if (body.metadata !== undefined) payload.metadata = body.metadata
@@ -82,22 +81,12 @@ export async function PUT(request: NextRequest) {
         if (body.distribution !== undefined) payload.distribution = body.distribution
         if (body.pattern_config !== undefined) payload.pattern_config = body.pattern_config
         break
-      case "clients":
+      case "plans":
         if (body.name !== undefined) payload.name = body.name
-        if (body.status !== undefined) payload.status = body.status
-        if (body.client_type !== undefined) payload.client_type = body.client_type
-        if (body.notion_id !== undefined) payload.notion_id = body.notion_id
-        if (body.contact_email !== undefined) payload.contact_email = body.contact_email
-        if (body.contact_phone !== undefined) payload.contact_phone = body.contact_phone
-        break
-      case "repos":
-        if (body.name !== undefined) payload.name = body.name
-        if (body.client_id !== undefined) payload.client_id = body.client_id
-        if (body.github_org !== undefined) payload.github_org = body.github_org
-        if (body.github_repo !== undefined) payload.github_repo = body.github_repo
-        if (body.default_branch !== undefined) payload.default_branch = body.default_branch
-        if (body.repo_url !== undefined) payload.repo_url = body.repo_url
         if (body.description !== undefined) payload.description = body.description
+        if (body.status !== undefined) payload.status = body.status
+        if (body.repo_url !== undefined) payload.repo_url = body.repo_url
+        if (body.metadata !== undefined) payload.metadata = body.metadata
         break
     }
 

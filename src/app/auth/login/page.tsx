@@ -26,7 +26,7 @@ export default function LoginPage() {
     if (error) {
       setMessage(error.message)
     } else {
-      router.push("/projects")
+      router.push("/")
       router.refresh()
     }
     setIsLoading(false)

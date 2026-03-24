@@ -5,7 +5,6 @@ export * from "@/lib/supabase/types"
 export type {
   TaskRecommendation,
   SprintRecommendation,
-  ProjectRecommendation,
   ExecutionConfig,
   SwarmConfig,
   ActionTaken,
@@ -23,7 +22,7 @@ export type {
   // Planning types
   PlanningDeclineRequest,
   PlanningDeclineResponse,
-  CreateProjectRequest,
+  CreateJobRequest,
   // Enum string unions
   BlockerStatus,
   BlockerType,
@@ -52,7 +51,7 @@ export interface ChatMessage {
 
 // Execution types
 export interface ExecutionRequest {
-  level: "project" | "sprint" | "task"
+  level: "job" | "sprint" | "task"
   id: string
   action: "run" | "pause" | "cancel"
   pattern?: ExecutionPattern
@@ -63,7 +62,7 @@ export interface ExecutionRequest {
 
 export interface ExecutionStatus {
   id: string
-  level: "project" | "sprint" | "task"
+  level: "job" | "sprint" | "task"
   status: "pending" | "running" | "paused" | "completed" | "failed" | "cancelled"
   progress: number
   startedAt: string | null
@@ -81,13 +80,6 @@ export interface TaskFilters {
   dateTo?: string
   sortBy?: "created_at" | "updated_at" | "status" | "progress"
   sortOrder?: "asc" | "desc"
-}
-
-export interface ProjectFilters {
-  status?: import("@/lib/supabase/types").ProjectStatus
-  search?: string
-  client_id?: string
-  repo_id?: string
 }
 
 // Pagination

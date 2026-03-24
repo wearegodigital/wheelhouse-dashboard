@@ -220,10 +220,10 @@ function PlanCard({ plan }: { plan: Plan }) {
 
           <div className="flex items-center gap-2 shrink-0">
             {plan.project_id && (
-              <Link href={`/projects/${plan.project_id}`}>
+              <Link href={`/jobs/${plan.project_id}`}>
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
                   <ExternalLink className="h-3 w-3" />
-                  Project
+                  Job
                 </Button>
               </Link>
             )}
@@ -335,9 +335,9 @@ function PlanCard({ plan }: { plan: Plan }) {
               This plan has been approved and implemented.
             </span>
             {plan.project_id && (
-              <Link href={`/projects/${plan.project_id}`}>
+              <Link href={`/jobs/${plan.project_id}`}>
                 <Button size="sm" variant="outline" className="h-7 text-xs">
-                  Plan Again
+                  View Job
                 </Button>
               </Link>
             )}

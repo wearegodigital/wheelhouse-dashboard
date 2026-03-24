@@ -11,10 +11,10 @@ interface ShortcutConfig {
 }
 
 export const shortcuts: Omit<ShortcutConfig, "action">[] = [
-  { key: "g", description: "Go to Projects", ctrlKey: false },
+  { key: "g", description: "Go to Planning", ctrlKey: false },
   { key: "t", description: "Go to Tasks", ctrlKey: false },
   { key: "s", description: "Go to Settings", ctrlKey: false },
-  { key: "n", description: "New Project", ctrlKey: false },
+  { key: "n", description: "Delegate", ctrlKey: false },
   { key: "/", description: "Show keyboard shortcuts", ctrlKey: false },
   { key: "Escape", description: "Close modal/dialog", ctrlKey: false },
 ]
@@ -45,7 +45,7 @@ export function useKeyboardShortcuts(
       switch (event.key.toLowerCase()) {
         case "g":
           event.preventDefault()
-          router.push("/projects")
+          router.push("/planning")
           break
         case "t":
           event.preventDefault()
@@ -57,7 +57,7 @@ export function useKeyboardShortcuts(
           break
         case "n":
           event.preventDefault()
-          router.push("/projects/new")
+          router.push("/delegate")
           break
         case "/":
         case "?":

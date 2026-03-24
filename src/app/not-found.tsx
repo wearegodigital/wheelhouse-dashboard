@@ -19,7 +19,7 @@ export default function NotFound() {
             Go back
           </Button>
         </Link>
-        <Link href="/projects">
+        <Link href="/planning">
           <Button>
             <Home className="h-4 w-4 mr-2" />
             Go to Dashboard

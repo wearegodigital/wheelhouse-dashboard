@@ -12,7 +12,7 @@ async function fetchStats() {
 }
 
 const STAT_CARDS = [
-  { key: "active_projects", label: "Active Projects", icon: FolderOpen, color: "text-amber-400" },
+  { key: "active_projects", label: "Active Jobs", icon: FolderOpen, color: "text-amber-400" },
   { key: "tasks_completed", label: "Tasks Completed", icon: CheckCircle2, color: "text-green-400" },
   { key: "tasks_in_progress", label: "In Progress", icon: Loader2, color: "text-blue-400" },
   { key: "tasks_blocked", label: "Blocked", icon: AlertTriangle, color: "text-red-400" },

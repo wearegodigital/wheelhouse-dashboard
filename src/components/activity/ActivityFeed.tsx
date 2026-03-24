@@ -183,7 +183,7 @@ function ActivityItem({ activity, isLast }: ActivityItemProps) {
 function getEntityLink(activity: ActivityWithUser): string | null {
   switch (activity.entity_type) {
     case "project":
-      return `/projects/${activity.entity_id}`
+      return `/jobs/${activity.entity_id}`
     case "sprint":
       return `/sprints/${activity.entity_id}`
     case "task":

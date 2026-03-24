@@ -552,11 +552,11 @@ export default function JobDetailPage() {
               </div>
             </div>
 
-            {job.project_id && (
-              <Link href={`/projects/${job.project_id}`}>
+            {job.plan_id && (
+              <Link href={`/planning/${job.plan_id}`}>
                 <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
                   <ExternalLink className="h-3.5 w-3.5" />
-                  View Project
+                  View Plan
                 </Button>
               </Link>
             )}
@@ -647,12 +647,12 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            {job.project_id && (
+            {job.plan_id && (
               <div className="flex items-center gap-3">
-                <Link href={`/projects/${job.project_id}`}>
+                <Link href={`/planning/${job.plan_id}`}>
                   <Button className="gap-2">
                     <ExternalLink className="h-4 w-4" />
-                    View Project
+                    View Plan
                   </Button>
                 </Link>
               </div>

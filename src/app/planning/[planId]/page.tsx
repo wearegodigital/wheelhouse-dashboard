@@ -343,9 +343,9 @@ function ContextCard({
         {plan.project_id && (
           <div className="flex items-center gap-2 text-sm">
             <ClipboardList className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-muted-foreground">Project:</span>
+            <span className="text-muted-foreground">Job:</span>
             <Link
-              href={`/projects/${plan.project_id}`}
+              href={`/jobs/${plan.project_id}`}
               className="text-primary hover:underline truncate"
             >
               {plan.project_id.slice(0, 8)}...
@@ -415,7 +415,7 @@ export default function PlanDetailPage() {
         onSuccess: () => {
           // Redirect to project if linked
           if (plan?.project_id) {
-            router.push(`/projects/${plan.project_id}`)
+            router.push(`/jobs/${plan.project_id}`)
           }
         },
       }
@@ -517,10 +517,10 @@ export default function PlanDetailPage() {
             </div>
 
             {plan.project_id && (
-              <Link href={`/projects/${plan.project_id}`}>
+              <Link href={`/jobs/${plan.project_id}`}>
                 <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
                   <ExternalLink className="h-3.5 w-3.5" />
-                  View Project
+                  View Job
                 </Button>
               </Link>
             )}
@@ -679,18 +679,10 @@ export default function PlanDetailPage() {
 
             <div className="flex items-center gap-3 flex-wrap">
               {plan.project_id && (
-                <Link href={`/projects/${plan.project_id}`}>
+                <Link href={`/jobs/${plan.project_id}`}>
                   <Button className="gap-2">
                     <ExternalLink className="h-4 w-4" />
-                    View Project
-                  </Button>
-                </Link>
-              )}
-              {plan.project_id && (
-                <Link href={`/projects/${plan.project_id}`}>
-                  <Button variant="outline" className="gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Plan Again
+                    View Job
                   </Button>
                 </Link>
               )}
@@ -749,10 +741,10 @@ export default function PlanDetailPage() {
                 Resubmit for Review
               </Button>
               {plan.project_id && (
-                <Link href={`/projects/${plan.project_id}`}>
+                <Link href={`/jobs/${plan.project_id}`}>
                   <Button variant="outline" className="gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Plan Again
+                    <ExternalLink className="h-4 w-4" />
+                    View Job
                   </Button>
                 </Link>
               )}

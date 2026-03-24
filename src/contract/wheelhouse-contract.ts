@@ -7,6 +7,9 @@ export type TaskStatus = "pending" | "assigned" | "in_progress" | "checking" | "
 /** Project lifecycle status. */
 export type ProjectStatus = "draft" | "planning" | "ready" | "running" | "completed" | "failed" | "cancelled";
 
+/** Job lifecycle status. */
+export type JobStatus = "pending" | "draft" | "ready" | "running" | "completed" | "failed" | "cancelled";
+
 /** Sprint lifecycle status. */
 export type SprintStatus = "draft" | "ready" | "running" | "blocked" | "completed" | "failed" | "cancelled";
 
@@ -83,6 +86,7 @@ export interface Project {
 export interface Sprint {
   id: string;
   project_id: string;
+  job_id?: string;
   name: string;
   description?: string;
   order_index?: number;
@@ -111,8 +115,8 @@ export interface SprintRecommendation {
   tasks?: TaskRecommendation[];
 }
 
-/** A recommended project decomposition from planning. */
-export interface ProjectRecommendation {
+/** A recommended job/project decomposition from planning. */
+export interface JobRecommendation {
   name: string;
   description?: string;
   repo_url?: string;
@@ -155,7 +159,7 @@ export interface ExecutionConfig {
 
 /** Structured action taken during planning. */
 export interface ActionTaken {
-  type: "project_created" | "sprint_created" | "task_created" | "task_updated" | "task_deleted";
+  type: "project_created" | "job_created" | "sprint_created" | "task_created" | "task_updated" | "task_deleted";
   id: string;
   name: string;
   url: string;
@@ -171,46 +175,10 @@ export interface PlanningSessionSummary {
   message_count?: number;
 }
 
-/** Shape returned by GET /projects (each item in the projects array). */
-export interface ProjectListItem {
-  id: string;
-  name: string;
-  description: string;
-  status: ProjectStatus;
-  notion_id?: string;
-  planning_rigor?: string;
-  task_granularity?: string;
-  created_at?: string;
-  sprint_count?: number;
-  sprints_completed?: number;
-  task_count?: number;
-  tasks_completed?: number;
-}
-
-/** Shape returned by GET /projects/{id} (the project object). */
-export interface ProjectDetail {
-  id: string;
-  name: string;
-  description: string;
-  status: ProjectStatus;
-  notion_id?: string;
-  planning_rigor?: string;
-  task_granularity?: string;
-  granularity_instructions?: string;
-  repo_url?: string;
-  default_branch?: string;
-  created_at?: string;
-  sprint_count?: number;
-  sprints_completed?: number;
-  task_count?: number;
-  tasks_completed?: number;
-  sprints?: SprintListItem[];
-}
-
-/** Shape returned within project detail (sprint with nested tasks). */
+/** Shape returned within job detail (sprint with nested tasks). */
 export interface SprintListItem {
   id: string;
-  project_id?: string;
+  job_id?: string;
   name: string;
   description: string;
   order_index: number;
@@ -265,7 +233,7 @@ export interface ExecuteResponse {
 export interface PlanningChatRequest {
   message: string;
   repoUrl?: string;
-  projectId?: string;
+  jobId?: string;
   conversationId?: string;
   history?: Record<string, unknown>[];
 }
@@ -279,7 +247,7 @@ export interface PlanningApproveRequest {
 /** Shape for POST /planning/approve response. */
 export interface PlanningApproveResponse {
   success: boolean;
-  project_id?: string;
+  job_id?: string;
   sprint_ids?: string[];
   task_ids?: string[];
   blocker_ids?: string[];
@@ -301,10 +269,10 @@ export interface PlanningSSEEvent {
   elapsed?: number;
 }
 
-/** Response shape for POST /projects. */
-export interface CreateProjectResponse {
+/** Response shape for POST /jobs. */
+export interface CreateJobResponse {
   success: boolean;
-  project_id: string;
+  job_id: string;
   message: string;
 }
 
@@ -423,9 +391,7 @@ export interface NotionSyncResponse {
 
 export interface ContextAttachmentResponse {
   id: string;
-  client_id?: string;
-  repo_id?: string;
-  project_id?: string;
+  job_id?: string;
   sprint_id?: string;
   task_id?: string;
   type: string;
@@ -441,17 +407,6 @@ export interface ContextAttachmentResponse {
   updated_at?: string;
 }
 
-export interface ProjectNotionLinkResponse {
-  id: string;
-  project_id: string;
-  notion_page_id: string;
-  notion_task_id?: string;
-  role?: string;
-  title?: string;
-  url?: string;
-  created_at?: string;
-}
-
 /** Schema describing what human input a blocker needs. */
 export interface BlockerInputSchema {
   type: BlockerInputType;
@@ -465,7 +420,7 @@ export interface BlockerListItem {
   id: string;
   task_id?: string;
   sprint_id?: string;
-  project_id?: string;
+  job_id?: string;
   title: string;
   description?: string;
   blocker_type: BlockerType;
@@ -481,7 +436,7 @@ export interface BlockerListItem {
 export interface CreateBlockerRequest {
   task_id?: string;
   sprint_id?: string;
-  project_id?: string;
+  job_id?: string;
   title: string;
   description?: string;
   blocker_type?: BlockerType;
@@ -524,10 +479,11 @@ export interface PlanningDeclineResponse {
   regeneration_started?: boolean;
 }
 
-/** Shape for POST /projects request body. */
-export interface CreateProjectRequest {
-  name: string;
+/** Shape for POST /jobs request body. */
+export interface CreateJobRequest {
+  name?: string;
   description?: string;
+  plan_id?: string;
   repo_url?: string;
   planning_rigor?: string;
   task_granularity?: string;
@@ -536,8 +492,8 @@ export interface CreateProjectRequest {
 
 /** Dashboard stats overview response. */
 export interface StatsOverviewResponse {
-  total_projects?: number;
-  active_projects?: number;
+  total_jobs?: number;
+  active_jobs?: number;
   total_tasks?: number;
   tasks_completed?: number;
   tasks_in_progress?: number;
@@ -548,7 +504,7 @@ export interface StatsOverviewResponse {
 /** Shape for plans in list responses. */
 export interface PlanListItem {
   id: string;
-  project_id: string;
+  job_id?: string;
   status: string;
   conversation_id?: string;
   notion_task_id?: string;
@@ -561,7 +517,7 @@ export interface PlanListItem {
 /** Full plan detail including recommendation. */
 export interface PlanDetail {
   id: string;
-  project_id: string;
+  job_id?: string;
   status: string;
   conversation_id?: string;
   notion_task_id?: string;
@@ -576,13 +532,21 @@ export interface PlanDetail {
 /** Shape for jobs in list responses. */
 export interface JobListItem {
   id: string;
+  name?: string;
+  description?: string;
   plan_id?: string;
-  project_id?: string;
   status: string;
+  default_branch?: string;
+  branch?: string;
+  pr_url?: string;
   execution_pattern?: string;
   distribution_mode?: string;
   repo_url?: string;
-  notion_task_id?: string;
+  metadata?: Record<string, unknown>;
+  planning_rigor?: string;
+  task_granularity?: string;
+  granularity_instructions?: string;
+  notion_id?: string;
   created_at?: string;
   started_at?: string;
   completed_at?: string;
@@ -591,13 +555,21 @@ export interface JobListItem {
 /** Full job detail including task breakdown and progress. */
 export interface JobDetail {
   id: string;
+  name?: string;
+  description?: string;
   plan_id?: string;
-  project_id?: string;
   status: string;
+  default_branch?: string;
+  branch?: string;
+  pr_url?: string;
   execution_pattern?: string;
   distribution_mode?: string;
   repo_url?: string;
-  notion_task_id?: string;
+  metadata?: Record<string, unknown>;
+  planning_rigor?: string;
+  task_granularity?: string;
+  granularity_instructions?: string;
+  notion_id?: string;
   created_at?: string;
   started_at?: string;
   completed_at?: string;
@@ -605,5 +577,10 @@ export interface JobDetail {
   progress?: Record<string, unknown>;
   error?: string;
   workers?: number;
+  sprint_count?: number;
+  sprints_completed?: number;
+  task_count?: number;
+  tasks_completed?: number;
+  sprints?: SprintListItem[];
 }
 

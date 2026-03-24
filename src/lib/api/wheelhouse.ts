@@ -17,14 +17,14 @@ export interface CreateResponse {
   success: boolean
   message: string
   id: string  // Supabase UUID for navigation (primary identifier)
-  project_id?: string
+  job_id?: string
   sprint_id?: string
   task_id?: string
   supabase_id?: string
   error?: string
 }
 
-type EntityType = "projects" | "sprints" | "tasks" | "clients" | "repos"
+type EntityType = "sprints" | "tasks" | "plans" | "jobs"
 
 // =============================================================================
 // DELETE Operations
@@ -63,7 +63,7 @@ async function deleteEntity(
   return data
 }
 
-export const deleteProject = (id: string, cascade = true) => deleteEntity("projects", id, cascade)
+export const deleteJob = (id: string, cascade = true) => deleteEntity("jobs", id, cascade)
 export const deleteSprint = (id: string, cascade = true) => deleteEntity("sprints", id, cascade)
 export const deleteTask = (id: string) => deleteEntity("tasks", id)
 
@@ -119,40 +119,16 @@ export async function updateEntity(type: EntityType, id: string, data: Record<st
 // CREATE Operations (entity-specific)
 // =============================================================================
 
-export const createProject = (data: {
+export const createJob = (data: {
   name: string
   description?: string
   repo_url?: string
   default_branch?: string
-  client_id?: string
-  repo_id?: string
-  notion_id?: string
+  plan_id?: string
   planning_rigor?: string
   task_granularity?: string
-}) => createEntity("projects", data)
-
-export const createClient = (data: {
-  name: string
-  status?: string
-  client_type?: string
   notion_id?: string
-  contact_email?: string
-  contact_phone?: string
-}) => createEntity("clients", data)
-
-export const deleteClient = (id: string, cascade = true) => deleteEntity("clients", id, cascade)
-
-export const createRepo = (data: {
-  name: string
-  client_id?: string
-  github_org?: string
-  github_repo?: string
-  default_branch?: string
-  repo_url?: string
-  description?: string
-}) => createEntity("repos", data)
-
-export const deleteRepo = (id: string) => deleteEntity("repos", id)
+}) => createEntity("jobs", data)
 
 export const createSprint = (data: {
   project_id: string

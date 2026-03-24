@@ -32,7 +32,7 @@ export default function Error({
           <RefreshCw className="h-4 w-4 mr-2" />
           Try again
         </Button>
-        <Link href="/projects">
+        <Link href="/planning">
           <Button>
             <Home className="h-4 w-4 mr-2" />
             Go to Dashboard

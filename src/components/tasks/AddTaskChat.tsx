@@ -70,7 +70,7 @@ export function AddTaskChat({
     try {
       const result = await approveRecommendation()
       if (result?.projectId) {
-        router.push(`/projects/${result.projectId}`)
+        router.push(`/jobs/${result.projectId}`)
       } else {
         onComplete?.()
       }

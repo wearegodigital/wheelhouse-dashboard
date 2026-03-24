@@ -554,9 +554,9 @@ function InProgressTab() {
                 year: "numeric",
               })}
             </p>
-            <Link href={`/projects/${project.id}`}>
+            <Link href={`/jobs/${project.id}`}>
               <Button className="w-full" size="sm" variant="outline">
-                View Project
+                View Job
                 <ArrowRight className="ml-2 h-3.5 w-3.5" />
               </Button>
             </Link>

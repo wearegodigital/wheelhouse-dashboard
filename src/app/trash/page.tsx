@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Trash2, RotateCcw, FolderGit2, GitBranch, CheckSquare, Clock, AlertCircle } from "lucide-react"
+import { Trash2, RotateCcw, GitBranch, CheckSquare, Clock, AlertCircle } from "lucide-react"
 import { PageContainer } from "@/components/layout/PageContainer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 
-type EntityType = "projects" | "sprints" | "tasks"
+type EntityType = "sprints" | "tasks"
 
 interface TrashedItem {
   id: string
@@ -19,15 +19,10 @@ interface TrashedItem {
   description?: string | null
 }
 
-async function fetchTrashed(): Promise<{ projects: TrashedItem[]; sprints: TrashedItem[]; tasks: TrashedItem[] }> {
+async function fetchTrashed(): Promise<{ sprints: TrashedItem[]; tasks: TrashedItem[] }> {
   const supabase = createClient()
 
-  const [projectsRes, sprintsRes, tasksRes] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id, name, deleted_at, status, description")
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false }),
+  const [sprintsRes, tasksRes] = await Promise.all([
     supabase
       .from("sprints")
       .select("id, name, deleted_at, status, description")
@@ -40,7 +35,6 @@ async function fetchTrashed(): Promise<{ projects: TrashedItem[]; sprints: Trash
       .order("deleted_at", { ascending: false }),
   ])
 
-  if (projectsRes.error) throw projectsRes.error
   if (sprintsRes.error) throw sprintsRes.error
   if (tasksRes.error) throw tasksRes.error
 
@@ -60,7 +54,6 @@ async function fetchTrashed(): Promise<{ projects: TrashedItem[]; sprints: Trash
   }
 
   return {
-    projects: (projectsRes.data ?? []).map((p) => toTrashedItem(p, p.name, "projects")),
     sprints: (sprintsRes.data ?? []).map((s) => toTrashedItem(s, s.name, "sprints")),
     tasks: (tasksRes.data ?? []).map((t) => toTrashedItem(t, t.title, "tasks")),
   }
@@ -96,7 +89,6 @@ function daysUntilPermanent(dateStr: string): number {
 }
 
 const TAB_CONFIG: { id: EntityType; label: string; icon: React.ReactNode }[] = [
-  { id: "projects", label: "Projects", icon: <FolderGit2 className="h-4 w-4" /> },
   { id: "sprints", label: "Sprints", icon: <GitBranch className="h-4 w-4" /> },
   { id: "tasks", label: "Tasks", icon: <CheckSquare className="h-4 w-4" /> },
 ]
@@ -184,7 +176,7 @@ function EmptyTrash({ type }: { type: string }) {
 }
 
 export default function TrashPage() {
-  const [activeTab, setActiveTab] = useState<EntityType>("projects")
+  const [activeTab, setActiveTab] = useState<EntityType>("sprints")
   const queryClient = useQueryClient()
 
   const { data, isLoading, error } = useQuery({
@@ -196,14 +188,13 @@ export default function TrashPage() {
     mutationFn: restoreItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trash"] })
-      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["jobs"] })
       queryClient.invalidateQueries({ queryKey: ["sprints"] })
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
     },
   })
 
   const counts = {
-    projects: data?.projects.length ?? 0,
     sprints: data?.sprints.length ?? 0,
     tasks: data?.tasks.length ?? 0,
   }

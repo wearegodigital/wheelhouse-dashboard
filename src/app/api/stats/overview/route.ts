@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server'
  */
 
 interface StatsOverviewResponse {
-  total_projects?: number
+  total_jobs?: number
   total_sprints?: number
   total_tasks?: number
   completed_tasks?: number

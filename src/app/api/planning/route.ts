@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 export const runtime = 'edge'
 
 interface PlanningChatRequest {
-  projectId?: string
+  planId?: string
   sprintId?: string
   conversationId?: string
   message: string
@@ -14,7 +14,7 @@ interface PlanningChatRequest {
 }
 
 // Helper to get repo URL from project or sprint
-async function getRepoUrl(projectId?: string, sprintId?: string): Promise<string> {
+async function getRepoUrl(planId?: string, sprintId?: string): Promise<string> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -22,11 +22,12 @@ async function getRepoUrl(projectId?: string, sprintId?: string): Promise<string
 
   const supabase = createClient(supabaseUrl, supabaseKey)
 
-  if (projectId) {
-    const { data } = await supabase
-      .from('projects')
+  if (planId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from('plans')
       .select('repo_url')
-      .eq('id', projectId)
+      .eq('id', planId)
       .single()
     return data?.repo_url || ''
   }
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get repo URL for codebase awareness
-    const repoUrl = await getRepoUrl(body.projectId, body.sprintId)
+    const repoUrl = await getRepoUrl(body.planId, body.sprintId)
 
     // Call Modal API with history and repo URL for codebase context
     const response = await fetch(`${modalApiUrl}/planning/chat`, {
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         message: body.message,
         repoUrl, // Include repo URL for codebase awareness
-        projectId: body.projectId,
+        planId: body.planId,
         sprintId: body.sprintId,
         conversationId: body.conversationId,
         history: body.history || [],

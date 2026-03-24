@@ -30,7 +30,7 @@ import { NotionTaskAccordion } from "@/components/planning/NotionTaskAccordion"
 import { PlanGenerationProgress } from "@/components/planning/PlanGenerationProgress"
 import type { DecompositionRecommendation } from "@/types"
 import { useToast } from "@/components/ui/toast"
-import { createProject as createProjectApi } from "@/lib/api/wheelhouse"
+import { createJob as createJobApi } from "@/lib/api/wheelhouse"
 import { GitHubRepoPicker, type GitHubRepoSelection } from "@/components/repos/GitHubRepoPicker"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -456,7 +456,7 @@ function StepConfirm({
   onTaskGranularityLevelChange,
   onTaskGranularityCustomChange,
   onBack,
-  onProjectCreated,
+  onJobCreated,
 }: {
   pageId: string
   granularity: Granularity
@@ -472,7 +472,7 @@ function StepConfirm({
   onTaskGranularityLevelChange: (v: TaskGranularityLevel) => void
   onTaskGranularityCustomChange: (v: string) => void
   onBack: () => void
-  onProjectCreated?: (projectId: string) => void
+  onJobCreated?: (projectId: string) => void
 }) {
   const router = useRouter()
   const { addToast } = useToast()
@@ -488,10 +488,10 @@ function StepConfirm({
       const taskGranularityValue =
         taskGranularityLevel === "custom" ? taskGranularityCustom.trim() || "custom" : taskGranularityLevel
 
-      let targetProjectId = ""
+      let targetJobId = ""
 
       if (granularity === "sprint" || granularity === "project") {
-        const result = await createProjectApi({
+        const result = await createJobApi({
           name: newProjectName.trim() || `Notion Task ${pageId.slice(0, 8)}`,
           description: newProjectDescription.trim() || undefined,
           repo_url: repoUrl || undefined,
@@ -500,9 +500,9 @@ function StepConfirm({
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
         })
-        if (!result.success) throw new Error(result.message || "Failed to create project")
+        if (!result.success) throw new Error(result.message || "Failed to create job")
         if (result.id) {
-          targetProjectId = result.id
+          targetJobId = result.id
         }
       }
 
@@ -513,7 +513,7 @@ function StepConfirm({
         body: JSON.stringify({
           granularity,
           repo_url: repoUrl || null,
-          project_id: targetProjectId || null,
+          project_id: targetJobId || null,
           planning_rigor: planningRigor,
           task_granularity: taskGranularityValue,
           metadata: {
@@ -527,14 +527,14 @@ function StepConfirm({
         console.warn("Failed to mark Notion task as delegated")
       }
 
-      return { projectId: targetProjectId }
+      return { projectId: targetJobId }
     },
     onSuccess: ({ projectId: pid }) => {
       addToast("Plan submitted successfully", "success")
-      if (onProjectCreated) {
-        onProjectCreated(pid || "")
+      if (onJobCreated) {
+        onJobCreated(pid || "")
       } else if (pid) {
-        router.push(`/projects/${pid}`)
+        router.push(`/jobs/${pid}`)
       } else {
         router.push("/planning")
       }
@@ -716,7 +716,7 @@ export default function ProcessTaskPage() {
 
   // Planning phase state
   const [planningPhase, setPlanningPhase] = useState<"wizard" | "generating" | "guided" | "review" | "done">("wizard")
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
+  const [createdJobId, setCreatedJobId] = useState<string | null>(null)
   const [showFallback, setShowFallback] = useState(false)
 
   const guidedPlanning = useGuidedPlanning({
@@ -732,7 +732,7 @@ export default function ProcessTaskPage() {
       notion_due_date: notionTaskData?.due_date || "",
       client_name: notionTaskData?.client_name || "",
       repo_url: repoUrl,
-      project_id: createdProjectId ?? undefined,
+      project_id: createdJobId ?? undefined,
     },
   })
 
@@ -793,20 +793,20 @@ export default function ProcessTaskPage() {
               body: JSON.stringify({
                 conversationId: guidedPlanning.conversationId,
                 recommendation: guidedPlanning.plan,
-                projectId: createdProjectId,
+                projectId: createdJobId,
               }),
             })
           } catch (e) {
             console.error("Auto-approve failed:", e)
           } finally {
-            router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
+            router.push(createdJobId ? `/jobs/${createdJobId}` : "/planning")
           }
         })()
       } else {
         setPlanningPhase("review")
       }
     }
-  }, [guidedPlanning.status, planningRigor, guidedPlanning.conversationId, guidedPlanning.plan, createdProjectId, router])
+  }, [guidedPlanning.status, planningRigor, guidedPlanning.conversationId, guidedPlanning.plan, createdJobId, router])
 
   function handleNotionData(data: NotionTaskData) {
     setNotionTaskData(data)
@@ -820,8 +820,8 @@ export default function ProcessTaskPage() {
     }
   }
 
-  function handleProjectCreated(pid: string) {
-    setCreatedProjectId(pid || null)
+  function handleJobCreated(pid: string) {
+    setCreatedJobId(pid || null)
     if (planningRigor === "delegate" || planningRigor === "review") {
       // Skip guided questions — go straight to plan generation
       setPlanningPhase("generating")
@@ -895,7 +895,7 @@ export default function ProcessTaskPage() {
                 onTaskGranularityLevelChange={setTaskGranularityLevel}
                 onTaskGranularityCustomChange={setTaskGranularityCustom}
                 onBack={() => setStep(3)}
-                onProjectCreated={handleProjectCreated}
+                onJobCreated={handleJobCreated}
               />
             )}
           </>
@@ -930,7 +930,7 @@ export default function ProcessTaskPage() {
           </div>
         )}
 
-        {planningPhase === "guided" && createdProjectId !== null && (
+        {planningPhase === "guided" && createdJobId !== null && (
           <div>
             <NotionTaskAccordion notionPageId={pageId} />
             <div className="mt-4">
@@ -977,7 +977,7 @@ export default function ProcessTaskPage() {
                       body: JSON.stringify({
                         conversationId: guidedPlanning.conversationId,
                         recommendation: plan,
-                        projectId: createdProjectId,
+                        projectId: createdJobId,
                       }),
                     })
 
@@ -986,10 +986,10 @@ export default function ProcessTaskPage() {
                       throw new Error((err as { error?: string }).error || "Failed to create sprints")
                     }
 
-                    router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
+                    router.push(createdJobId ? `/jobs/${createdJobId}` : "/planning")
                   } catch (e) {
                     console.error("Approve failed:", e)
-                    router.push(createdProjectId ? `/projects/${createdProjectId}` : "/projects")
+                    router.push(createdJobId ? `/jobs/${createdJobId}` : "/planning")
                   }
                 }}
               />

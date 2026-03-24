@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import * as Sentry from "@sentry/nextjs"
 import { createClient } from "@/lib/supabase/server"
 
-type EntityType = "projects" | "sprints" | "tasks" | "clients" | "repos"
+type EntityType = "jobs" | "sprints" | "tasks" | "plans"
 
-interface CreateProjectBody {
+interface CreateJobBody {
   name: string
   description?: string
   repo_url?: string
   default_branch?: string
-  notion_id?: string
+  plan_id?: string
   planning_rigor?: string
   task_granularity?: string
+  notion_id?: string
 }
 
 interface CreateSprintBody {
@@ -29,41 +30,24 @@ interface CreateTaskBody {
   project_id?: string
 }
 
-interface CreateClientBody {
-  name: string
-  status?: string
-  client_type?: string
-  notion_id?: string
-  contact_email?: string
-  contact_phone?: string
-}
-
-interface CreateRepoBody {
-  name: string
-  client_id?: string
-  github_org?: string
-  github_repo?: string
-  default_branch?: string
-  repo_url?: string
-  description?: string
-}
-
 async function supabaseFallback(
   entityType: EntityType,
-  payload: CreateProjectBody | CreateSprintBody | CreateTaskBody | CreateClientBody | CreateRepoBody
+  payload: CreateJobBody | CreateSprintBody | CreateTaskBody
 ): Promise<NextResponse> {
   const supabase = await createClient()
 
   switch (entityType) {
-    case "projects": {
-      const p = payload as CreateProjectBody
-      const { data, error } = await supabase
-        .from("projects")
+    case "jobs": {
+      const p = payload as CreateJobBody
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("jobs")
         .insert({
-          name: p.name || "Untitled Project",
+          name: p.name || "Untitled Job",
           description: p.description || "",
           repo_url: p.repo_url || "",
           default_branch: p.default_branch || "main",
+          plan_id: p.plan_id || null,
           notion_id: p.notion_id || null,
           planning_rigor: p.planning_rigor || "review",
           task_granularity: p.task_granularity || "standard",
@@ -75,7 +59,7 @@ async function supabaseFallback(
       if (error) throw error
       const row = data as { id: string }
       return NextResponse.json(
-        { success: true, project_id: row.id, id: row.id, message: "Project created" },
+        { success: true, job_id: row.id, id: row.id, message: "Job created" },
         { status: 201 }
       )
     }
@@ -120,51 +104,6 @@ async function supabaseFallback(
         { status: 201 }
       )
     }
-    case "clients": {
-      const p = payload as CreateClientBody
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from("clients")
-        .insert({
-          name: p.name,
-          status: p.status || "active",
-          client_type: p.client_type || "project-based",
-          notion_id: p.notion_id || null,
-          contact_email: p.contact_email || null,
-          contact_phone: p.contact_phone || null,
-        })
-        .select("id")
-        .single()
-      if (error) throw error
-      const row = data as { id: string }
-      return NextResponse.json(
-        { success: true, client_id: row.id, id: row.id, message: "Client created" },
-        { status: 201 }
-      )
-    }
-    case "repos": {
-      const p = payload as CreateRepoBody
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from("repos")
-        .insert({
-          name: p.name,
-          client_id: p.client_id || null,
-          github_org: p.github_org || "",
-          github_repo: p.github_repo || "",
-          default_branch: p.default_branch || "main",
-          repo_url: p.repo_url || "",
-          description: p.description || "",
-        })
-        .select("id")
-        .single()
-      if (error) throw error
-      const row = data as { id: string }
-      return NextResponse.json(
-        { success: true, repo_id: row.id, id: row.id, message: "Repo created" },
-        { status: 201 }
-      )
-    }
     default:
       return NextResponse.json({ success: false, message: "Unknown entity type" }, { status: 400 })
   }
@@ -186,7 +125,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const entityType = body.type as EntityType
 
-    if (!entityType || !["projects", "sprints", "tasks", "clients", "repos"].includes(entityType)) {
+    if (!entityType || !["jobs", "sprints", "tasks", "plans"].includes(entityType)) {
       return NextResponse.json(
         { success: false, message: "Invalid or missing entity type" },
         { status: 400 }
@@ -194,15 +133,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the payload based on entity type
-    let payload: CreateProjectBody | CreateSprintBody | CreateTaskBody | CreateClientBody | CreateRepoBody
+    let payload: CreateJobBody | CreateSprintBody | CreateTaskBody
 
     switch (entityType) {
-      case "projects":
+      case "jobs":
         payload = {
           name: body.name,
           description: body.description || "",
           repo_url: body.repo_url || "",
           default_branch: body.default_branch || "main",
+          plan_id: body.plan_id,
           notion_id: body.notion_id,
           planning_rigor: body.planning_rigor,
           task_granularity: body.task_granularity,
@@ -237,38 +177,14 @@ export async function POST(request: NextRequest) {
           project_id: body.project_id,
         }
         break
-      case "clients":
-        if (!body.name) {
-          return NextResponse.json(
-            { success: false, message: "Client requires name" },
-            { status: 400 }
-          )
-        }
+      case "plans":
+        // Plans are created via planning flow; minimal fallback
         payload = {
-          name: body.name,
-          status: body.status,
-          client_type: body.client_type,
-          notion_id: body.notion_id,
-          contact_email: body.contact_email,
-          contact_phone: body.contact_phone,
-        }
-        break
-      case "repos":
-        if (!body.name) {
-          return NextResponse.json(
-            { success: false, message: "Repo requires name" },
-            { status: 400 }
-          )
-        }
-        payload = {
-          name: body.name,
-          client_id: body.client_id,
-          github_org: body.github_org,
-          github_repo: body.github_repo,
-          default_branch: body.default_branch,
-          repo_url: body.repo_url,
-          description: body.description,
-        }
+          name: body.name || "Untitled Plan",
+          description: body.description || "",
+          repo_url: body.repo_url || "",
+          default_branch: body.default_branch || "main",
+        } as CreateJobBody
         break
     }
 
@@ -298,7 +214,7 @@ export async function POST(request: NextRequest) {
             // fall through to Supabase fallback below
           } else {
             // Modal succeeded — extract the UUID for navigation
-            const id = data.project_id || data.sprint_id || data.task_id || data.client_id || data.repo_id
+            const id = data.job_id || data.sprint_id || data.task_id || data.plan_id
             return NextResponse.json({
               ...data,
               id, // Supabase UUID for navigation

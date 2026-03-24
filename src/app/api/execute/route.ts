@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
  * Proxies requests to the Modal backend API.
  */
 
-type ExecutionLevel = 'project' | 'sprint' | 'task'
+type ExecutionLevel = 'job' | 'sprint' | 'task'
 type ExecutionAction = 'run' | 'pause' | 'cancel'
 
 interface ExecutionRequest {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate level value
-    const validLevels: ExecutionLevel[] = ['project', 'sprint', 'task']
+    const validLevels: ExecutionLevel[] = ['job', 'sprint', 'task']
     if (!validLevels.includes(level)) {
       return NextResponse.json(
         {

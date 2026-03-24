@@ -92,7 +92,7 @@ export function useDeleteSprint() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["sprints", data.projectId] })
-      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["jobs"] })
     },
   })
 }

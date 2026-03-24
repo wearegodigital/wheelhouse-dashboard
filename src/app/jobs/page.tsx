@@ -154,14 +154,6 @@ function JobCard({ job }: { job: Job }) {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {job.project_id && (
-              <Link href={`/projects/${job.project_id}`} onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
-                  <ExternalLink className="h-3 w-3" />
-                  Project
-                </Button>
-              </Link>
-            )}
           </div>
         </div>
       </CardHeader>

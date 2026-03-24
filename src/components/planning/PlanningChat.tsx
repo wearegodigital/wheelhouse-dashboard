@@ -210,7 +210,7 @@ Please analyze the requirements and propose a decomposition into sprints and tas
                     try {
                       const result = await approveRecommendation()
                       if (result?.projectId) {
-                        router.push(`/projects/${result.projectId}`)
+                        router.push(`/jobs/${result.projectId}`)
                       }
                     } finally {
                       setIsApproving(false)
@@ -283,7 +283,7 @@ Please analyze the requirements and propose a decomposition into sprints and tas
           try {
             const result = await approveRecommendation()
             if (result?.projectId) {
-              router.push(`/projects/${result.projectId}`)
+              router.push(`/jobs/${result.projectId}`)
             }
           } finally {
             setIsApproving(false)

@@ -17,7 +17,7 @@ const MODAL_API_URL = process.env.MODAL_API_URL || ""
 interface ApproveRequest {
   conversationId: string        // Backend session ID (from SSE)
   supabaseConversationId?: string // Local DB record ID
-  projectId?: string
+  jobId?: string
   sprintId?: string
   modifications?: Record<string, unknown>
   recommendation?: Record<string, unknown>  // Fallback if DB save failed during streaming
@@ -25,7 +25,7 @@ interface ApproveRequest {
 
 interface ModalApproveResponse {
   success: boolean
-  project_id?: string
+  job_id?: string
   sprint_ids?: string[]
   task_ids?: string[]
   message?: string
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ApproveRequest = await request.json()
-    const { conversationId, supabaseConversationId, projectId, sprintId, modifications, recommendation } = body
+    const { conversationId, supabaseConversationId, jobId, sprintId, modifications, recommendation } = body
 
     if (!conversationId) {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         conversationId,
-        projectId,
+        jobId,
         sprintId,
         modifications: modifications || {},
         ...(recommendation ? { recommendation } : {}),
@@ -119,9 +119,9 @@ export async function POST(request: NextRequest) {
     if (supabaseUrl && supabaseServiceKey) {
       const entitiesToVerify: Array<{ type: 'projects' | 'sprints' | 'tasks', id: string }> = []
 
-      // Add project if created
-      if (result.project_id) {
-        entitiesToVerify.push({ type: 'projects', id: result.project_id })
+      // Add job if created
+      if (result.job_id) {
+        entitiesToVerify.push({ type: 'projects', id: result.job_id })
       }
 
       // Add sprints if created
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: result.message || 'Recommendation approved and entities created',
-      projectId: result.project_id || projectId,
+      jobId: result.job_id || jobId,
       sprintIds: result.sprint_ids || [],
       taskIds: result.task_ids || [],
       verification: verificationResult,
