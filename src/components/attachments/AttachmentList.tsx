@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import type { ContextAttachment } from "@/lib/supabase/types"
 
-type ParentType = "project" | "sprint" | "task" | "client" | "repo"
+type ParentType = "job" | "sprint" | "task"
 
 interface AttachmentListProps {
   parentType: ParentType
@@ -25,11 +25,9 @@ interface AttachmentListProps {
 }
 
 const PARENT_COLUMN: Record<ParentType, string> = {
-  project: "project_id",
-  sprint:  "sprint_id",
-  task:    "task_id",
-  client:  "client_id",
-  repo:    "repo_id",
+  job:    "job_id",
+  sprint: "sprint_id",
+  task:   "task_id",
 }
 
 function formatSize(bytes: number | null): string {
