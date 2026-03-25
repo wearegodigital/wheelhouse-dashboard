@@ -704,6 +704,15 @@ export default function ProcessTaskPage() {
   const [step, setStep] = useState(1)
   const [granularity, setGranularity] = useState<Granularity>("task")
   const [repoUrl, setRepoUrl] = useState("")
+  const handleRepoUrlChange = (url: string) => {
+    setRepoUrl(url)
+    if (url) {
+      fetch("/api/planning/warm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).catch(() => {})
+    }
+  }
   const [defaultBranch, setDefaultBranch] = useState("")
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
@@ -872,7 +881,7 @@ export default function ProcessTaskPage() {
             {step === 3 && (
               <StepTarget
                 repoUrl={repoUrl}
-                onRepoUrlChange={setRepoUrl}
+                onRepoUrlChange={handleRepoUrlChange}
                 onBranchChange={(v) => setDefaultBranch(v)}
                 onBack={() => setStep(2)}
                 onNext={() => setStep(4)}
