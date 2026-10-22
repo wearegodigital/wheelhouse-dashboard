@@ -760,6 +760,7 @@ export default function ProcessTaskPage() {
       const timer = setTimeout(() => setShowFallback(true), 10_000)
       return () => clearTimeout(timer)
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern; rule tightened in eslint-plugin-react-hooks 7.1 (via eslint-config-next 16.4)
     setShowFallback(false)
   }, [planningPhase, guidedPlanning.planId])
 
@@ -812,6 +813,7 @@ export default function ProcessTaskPage() {
           }
         })()
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern; rule tightened in eslint-plugin-react-hooks 7.1 (via eslint-config-next 16.4)
         setPlanningPhase("review")
       }
     }

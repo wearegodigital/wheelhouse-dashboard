@@ -61,6 +61,7 @@ export default function SettingsPage() {
   }, [supabase])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing pattern; rule tightened in eslint-plugin-react-hooks 7.1 (via eslint-config-next 16.4)
     loadUser()
     loadApiKeys()
   }, [loadUser, loadApiKeys])
